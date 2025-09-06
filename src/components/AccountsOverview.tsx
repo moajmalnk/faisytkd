@@ -10,9 +10,10 @@ interface AccountsOverviewProps {
   accounts: Accounts;
   total: number;
   onUpdate: (account: keyof Accounts, amount: number) => void;
+  isPrivate?: boolean;
 }
 
-export const AccountsOverview = ({ accounts, total, onUpdate }: AccountsOverviewProps) => {
+export const AccountsOverview = ({ accounts, total, onUpdate, isPrivate = false }: AccountsOverviewProps) => {
   const [editAccount, setEditAccount] = useState<keyof Accounts | null>(null);
   const [amount, setAmount] = useState('');
 
@@ -33,7 +34,10 @@ export const AccountsOverview = ({ accounts, total, onUpdate }: AccountsOverview
     setAmount(accounts[account].toString());
   };
 
-  const formatCurrency = (amount: number) => `₹${amount.toLocaleString()}`;
+  const formatCurrency = (amount: number) => {
+    if (isPrivate) return '••••••';
+    return `₹${amount.toLocaleString()}`;
+  };
 
   const accountConfig = {
     cash: { label: 'Cash', icon: Banknote, color: 'text-success' },
@@ -51,19 +55,19 @@ export const AccountsOverview = ({ accounts, total, onUpdate }: AccountsOverview
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Object.entries(accounts).map(([key, value]) => {
             const account = key as keyof Accounts;
             const config = accountConfig[account];
             const Icon = config.icon;
             
             return (
-              <div key={account} className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Icon className={`h-5 w-5 ${config.color}`} />
-                  <div>
-                    <p className="font-medium">{config.label}</p>
-                    <p className={`text-lg font-bold ${config.color}`}>
+              <div key={account} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-secondary/30 rounded-lg gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Icon className={`h-5 w-5 ${config.color} flex-shrink-0`} />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm sm:text-base truncate">{config.label}</p>
+                    <p className={`text-base sm:text-lg font-bold ${config.color}`}>
                       {formatCurrency(value)}
                     </p>
                   </div>
@@ -72,6 +76,7 @@ export const AccountsOverview = ({ accounts, total, onUpdate }: AccountsOverview
                   variant="outline"
                   size="sm"
                   onClick={() => openEdit(account)}
+                  className="h-8 w-8 p-0 self-end sm:self-center"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>

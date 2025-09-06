@@ -51,17 +51,27 @@ const initialData: BookkeepingData = {
 
 export const useBookkeeping = () => {
   const [data, setData] = useState<BookkeepingData>(initialData);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bookkeeping-data');
-    if (saved) {
-      try {
-        setData(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setData(initialData);
+    const loadData = async () => {
+      setIsLoading(true);
+      // Simulate loading delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const saved = localStorage.getItem('bookkeeping-data');
+      if (saved) {
+        try {
+          setData(JSON.parse(saved));
+        } catch (error) {
+          console.error('Error loading data:', error);
+          setData(initialData);
+        }
       }
-    }
+      setIsLoading(false);
+    };
+    
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -143,6 +153,7 @@ export const useBookkeeping = () => {
   return {
     data,
     totals,
+    isLoading,
     addCollectItem,
     updateCollectItem,
     deleteCollectItem,

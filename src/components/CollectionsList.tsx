@@ -12,9 +12,10 @@ interface CollectionsListProps {
   onAdd: (name: string, amount: number) => void;
   onUpdate: (id: string, name: string, amount: number) => void;
   onDelete: (id: string) => void;
+  isPrivate?: boolean;
 }
 
-export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete }: CollectionsListProps) => {
+export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete, isPrivate = false }: CollectionsListProps) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<CollectItem | null>(null);
   const [formData, setFormData] = useState({ name: '', amount: '' });
@@ -41,7 +42,10 @@ export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete }: Col
     setFormData({ name: item.name, amount: item.amount.toString() });
   };
 
-  const formatCurrency = (amount: number) => `₹${amount.toLocaleString()}`;
+  const formatCurrency = (amount: number) => {
+    if (isPrivate) return '••••••';
+    return `₹${amount.toLocaleString()}`;
+  };
 
   return (
     <Card>
@@ -76,25 +80,27 @@ export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete }: Col
         </Dialog>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-64 sm:max-h-80 overflow-y-auto">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-              <div>
-                <p className="font-medium">{item.name}</p>
+            <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-secondary/50 rounded-lg gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{item.name}</p>
                 <p className="text-sm text-success font-semibold">{formatCurrency(item.amount)}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 self-end sm:self-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openEdit(item)}
+                  className="h-8 w-8 p-0"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="sm"  
                   onClick={() => onDelete(item.id)}
+                  className="h-8 w-8 p-0"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

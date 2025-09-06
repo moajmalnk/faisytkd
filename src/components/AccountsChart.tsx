@@ -13,14 +13,19 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface AccountsChartProps {
   accounts: Accounts;
+  isPrivate?: boolean;
 }
 
-export const AccountsChart = ({ accounts }: AccountsChartProps) => {
+export const AccountsChart = ({ accounts, isPrivate = false }: AccountsChartProps) => {
+  const chartData = isPrivate 
+    ? [100, 100, 100, 100] // Equal segments when private
+    : [accounts.cash, accounts.kotak, accounts.federal, accounts.creditCard];
+
   const data = {
     labels: ['Cash', 'Kotak Bank', 'Federal Bank', 'Credit Card'],
     datasets: [
       {
-        data: [accounts.cash, accounts.kotak, accounts.federal, accounts.creditCard],
+        data: chartData,
         backgroundColor: [
           'hsl(142 76% 36%)', // success
           'hsl(217 91% 52%)', // primary
@@ -52,6 +57,9 @@ export const AccountsChart = ({ accounts }: AccountsChartProps) => {
       tooltip: {
         callbacks: {
           label: function(context: any) {
+            if (isPrivate) {
+              return `${context.label}: ••••••`;
+            }
             const value = context.parsed;
             return `${context.label}: ₹${value.toLocaleString()}`;
           },
@@ -69,7 +77,7 @@ export const AccountsChart = ({ accounts }: AccountsChartProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-48 sm:h-64">
           <Doughnut data={data} options={options} />
         </div>
       </CardContent>

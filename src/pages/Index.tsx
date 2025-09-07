@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBookkeeping } from '@/hooks/useBookkeeping';
+import { useAuth } from '@/hooks/useAuth';
 import { CollectionsList } from '@/components/CollectionsList';
 import { PaymentsList } from '@/components/PaymentsList';
 import { IncomeList } from '@/components/IncomeList';
@@ -11,8 +12,10 @@ import { ExpenseDistributionChart } from '@/components/ExpenseDistributionChart'
 import { BookkeepingSkeleton } from '@/components/BookkeepingSkeleton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PrivacyToggle } from '@/components/PrivacyToggle';
+import { PinScreen } from '@/components/PinScreen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, TrendingUp, TrendingDown, Wallet, DollarSign, Target, Percent } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calculator, TrendingUp, TrendingDown, Wallet, DollarSign, Target, Percent, LogOut } from 'lucide-react';
 
 const Index = () => {
   const {
@@ -35,7 +38,9 @@ const Index = () => {
     updateAccount,
   } = useBookkeeping();
 
+  const { isAuthenticated, login, logout } = useAuth();
   const [isPrivate, setIsPrivate] = useState(false);
+  
   const netBalance = totals.collect - totals.pay;
 
   const formatAmount = (amount: number) => {
@@ -45,6 +50,10 @@ const Index = () => {
 
   if (isLoading) {
     return <BookkeepingSkeleton />;
+  }
+
+  if (!isAuthenticated) {
+    return <PinScreen onPinCorrect={login} />;
   }
 
   return (
@@ -59,6 +68,15 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <PrivacyToggle isPrivate={isPrivate} onToggle={() => setIsPrivate(!isPrivate)} />
             <ThemeToggle />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={logout}
+              className="hover:bg-danger hover:text-danger-foreground"
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 

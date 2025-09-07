@@ -12,6 +12,18 @@ export interface PayItem {
   amount: number;
 }
 
+export interface IncomeItem {
+  id: string;
+  name: string;
+  amount: number;
+}
+
+export interface ExpenseItem {
+  id: string;
+  name: string;
+  amount: number;
+}
+
 export interface Accounts {
   cash: number;
   kotak: number;
@@ -23,6 +35,8 @@ export interface BookkeepingData {
   collect: CollectItem[];
   pay: PayItem[];
   accounts: Accounts;
+  income: IncomeItem[];
+  expense: ExpenseItem[];
 }
 
 const initialData: BookkeepingData = {
@@ -47,6 +61,14 @@ const initialData: BookkeepingData = {
     federal: 60791,
     creditCard: 24836.04,
   },
+  income: [
+    { id: '1', name: 'Freelance Project', amount: 12000 },
+    { id: '2', name: 'Investment Return', amount: 5000 },
+  ],
+  expense: [
+    { id: '1', name: 'Groceries', amount: 2500 },
+    { id: '2', name: 'Travel', amount: 6000 },
+  ],
 };
 
 export const useBookkeeping = () => {
@@ -144,15 +166,80 @@ export const useBookkeeping = () => {
     }));
   };
 
+  const addIncomeItem = (name: string, amount: number) => {
+    const newItem: IncomeItem = {
+      id: Date.now().toString(),
+      name,
+      amount,
+    };
+    setData(prev => ({
+      ...prev,
+      income: [...prev.income, newItem],
+    }));
+  };
+
+  const updateIncomeItem = (id: string, name: string, amount: number) => {
+    setData(prev => ({
+      ...prev,
+      income: prev.income.map(item =>
+        item.id === id ? { ...item, name, amount } : item
+      ),
+    }));
+  };
+
+  const deleteIncomeItem = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      income: prev.income.filter(item => item.id !== id),
+    }));
+  };
+
+  const addExpenseItem = (name: string, amount: number) => {
+    const newItem: ExpenseItem = {
+      id: Date.now().toString(),
+      name,
+      amount,
+    };
+    setData(prev => ({
+      ...prev,
+      expense: [...prev.expense, newItem],
+    }));
+  };
+
+  const updateExpenseItem = (id: string, name: string, amount: number) => {
+    setData(prev => ({
+      ...prev,
+      expense: prev.expense.map(item =>
+        item.id === id ? { ...item, name, amount } : item
+      ),
+    }));
+  };
+
+  const deleteExpenseItem = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      expense: prev.expense.filter(item => item.id !== id),
+    }));
+  };
+
   const totals = {
     collect: data.collect.reduce((sum, item) => sum + item.amount, 0),
     pay: data.pay.reduce((sum, item) => sum + item.amount, 0),
     accounts: Object.values(data.accounts).reduce((sum, amount) => sum + amount, 0),
+    income: data.income.reduce((sum, item) => sum + item.amount, 0),
+    expense: data.expense.reduce((sum, item) => sum + item.amount, 0),
+  };
+
+  const analytics = {
+    profit: totals.income - totals.expense,
+    expenseRatio: totals.income > 0 ? (totals.expense / totals.income) * 100 : 0,
+    profitMargin: totals.income > 0 ? ((totals.income - totals.expense) / totals.income) * 100 : 0,
   };
 
   return {
     data,
     totals,
+    analytics,
     isLoading,
     addCollectItem,
     updateCollectItem,
@@ -160,6 +247,12 @@ export const useBookkeeping = () => {
     addPayItem,
     updatePayItem,
     deletePayItem,
+    addIncomeItem,
+    updateIncomeItem,
+    deleteIncomeItem,
+    addExpenseItem,
+    updateExpenseItem,
+    deleteExpenseItem,
     updateAccount,
   };
 };

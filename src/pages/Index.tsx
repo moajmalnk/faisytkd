@@ -97,8 +97,8 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Ratios Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Additional Financial Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Expense Ratio</CardTitle>
@@ -135,11 +135,33 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">To Pay</CardTitle>
+              <TrendingDown className="h-4 w-4 text-danger" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-danger">{formatAmount(totals.pay)}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Available Funds</CardTitle>
               <Wallet className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold text-primary">{formatAmount(totals.accounts)}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+              <DollarSign className={`h-4 w-4 ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-xl sm:text-2xl font-bold ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'}`}>
+                {formatAmount(totals.accounts + totals.collect - totals.pay)}
+              </div>
             </CardContent>
           </Card>
         </div>

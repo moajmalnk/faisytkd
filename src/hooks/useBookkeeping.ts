@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AccountsAPI, CategoriesAPI, TransactionsAPI } from '@/lib/api';
+import { bookkeepingNotifications } from '@/lib/notifications';
+import { useNotificationSettings } from '@/components/NotificationSettings';
 
 export interface CollectItem {
   id: string;
@@ -395,6 +397,14 @@ export const useBookkeeping = () => {
         ...prev,
         income: [...prev.income, newItem],
       }));
+
+      // Send notification for income added
+      try {
+        const category = data.categories.find(c => c.id === categoryId);
+        await bookkeepingNotifications.notifyTransactionAdded('income', amount, category?.name || 'Uncategorized');
+      } catch (notificationError) {
+        console.warn('Failed to send income notification:', notificationError);
+      }
     } catch (e) {
       console.error('addIncomeItem failed', e);
     }
@@ -455,6 +465,14 @@ export const useBookkeeping = () => {
         ...prev,
         expense: [...prev.expense, newItem],
       }));
+
+      // Send notification for expense added
+      try {
+        const category = data.categories.find(c => c.id === categoryId);
+        await bookkeepingNotifications.notifyTransactionAdded('expense', amount, category?.name || 'Uncategorized');
+      } catch (notificationError) {
+        console.warn('Failed to send expense notification:', notificationError);
+      }
     } catch (e) {
       console.error('addExpenseItem failed', e);
     }

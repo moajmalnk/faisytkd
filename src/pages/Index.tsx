@@ -13,6 +13,7 @@ import { ExpenseDistributionChart } from '@/components/ExpenseDistributionChart'
 import { BookkeepingSkeleton } from '@/components/BookkeepingSkeleton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PrivacyToggle } from '@/components/PrivacyToggle';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { PinScreen } from '@/components/PinScreen';
 import { PatternScreen } from '@/components/PatternScreen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -288,7 +289,7 @@ const Index = () => {
         </div>
 
         {/* Accounts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 pb-4 sm:pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
           <AccountsOverview
             accounts={data.accounts}
             total={totals.accounts}
@@ -299,6 +300,11 @@ const Index = () => {
           />
 
           <AccountsChart accounts={data.accounts} isPrivate={isPrivate} />
+        </div>
+
+        {/* Notification Settings Section */}
+        <div className="mb-4 sm:mb-6">
+          <NotificationSettings />
         </div>
       </div>
     </div>

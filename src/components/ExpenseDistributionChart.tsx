@@ -5,82 +5,128 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import type { ChartOptions } from 'chart.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart } from 'lucide-react';
-import { ExpenseItem } from '@/hooks/useBookkeeping';
+import { ExpenseItem, Category } from '@/hooks/useBookkeeping';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface ExpenseDistributionChartProps {
   expenses: ExpenseItem[];
+  categories: Category[];
   isPrivate?: boolean;
 }
 
-export const ExpenseDistributionChart = ({ expenses, isPrivate = false }: ExpenseDistributionChartProps) => {
-  const chartData = isPrivate 
-    ? expenses.map(() => 100) // Equal segments when private
-    : expenses.map(expense => expense.amount);
+export const ExpenseDistributionChart = ({ expenses, categories, isPrivate = false }: ExpenseDistributionChartProps) => {
+  // Group expenses by category
+  const categoryTotals = categories
+    .filter(cat => cat.type === 'expense')
+    .map(category => {
+      const total = expenses
+        .filter(expense => expense.categoryId === category.id)
+        .reduce((sum, expense) => sum + expense.amount, 0);
+      return {
+        category,
+        total,
+      };
+    })
+    .filter(item => item.total > 0);
 
-  const colors = [
-    'hsl(0 84% 60%)',    // danger
-    'hsl(25 95% 53%)',   // warning
-    'hsl(142 76% 36%)',  // success
-    'hsl(217 91% 52%)',  // primary
-    'hsl(270 95% 60%)',  // purple
-    'hsl(346 87% 43%)',  // pink
-    'hsl(24 74% 58%)',   // orange
-    'hsl(173 58% 39%)',  // teal
-  ];
+  const chartData = isPrivate 
+    ? categoryTotals.map(() => 100) // Equal segments when private
+    : categoryTotals.map(item => item.total);
+
+  // Resolve theme tokens
+  const cssHsl = (name: string, fallback: string) => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v ? `hsl(${v})` : fallback;
+  };
+  const bg = cssHsl('--background', 'hsl(0 0% 100%)');
+  const legendColor = cssHsl('--foreground', 'hsl(210 10% 15%)');
+  const popover = cssHsl('--popover', 'hsl(0 0% 100%)');
+  const popoverFg = cssHsl('--popover-foreground', legendColor);
+  const border = cssHsl('--border', 'hsl(214 32% 91%)');
 
   const data = {
-    labels: expenses.map(expense => expense.name),
+    labels: categoryTotals.map(item => isPrivate ? '••••••' : item.category.name),
     datasets: [
       {
         data: chartData,
-        backgroundColor: colors.slice(0, expenses.length),
-        borderColor: colors.slice(0, expenses.length),
-        borderWidth: 2,
+        backgroundColor: categoryTotals.map(item => item.category.color),
+        borderColor: bg,
+        borderWidth: 4,
       },
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 2000,
+    },
     plugins: {
       legend: {
         position: 'bottom' as const,
         labels: {
           padding: 20,
           usePointStyle: true,
+          font: {
+            size: 12,
+            weight: 500,
+          },
+          color: legendColor,
         },
       },
       tooltip: {
+        backgroundColor: popover,
+        titleColor: popoverFg,
+        bodyColor: popoverFg,
+        borderColor: border,
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
         callbacks: {
+          title: function(context: any) {
+            return context[0].label;
+          },
           label: function(context: any) {
-            if (isPrivate) {
-              return `${context.label}: ••••••`;
-            }
             const value = context.parsed;
-            return `${context.label}: ₹${value.toLocaleString()}`;
+            const percentage = ((value / categoryTotals.reduce((sum, item) => sum + item.total, 0)) * 100).toFixed(1);
+            return `Amount: ₹${value.toLocaleString()} (${percentage}%)`;
           },
         },
       },
     },
+    cutout: '60%',
   };
 
-  if (expenses.length === 0) {
+  if (categoryTotals.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PieChart className="h-5 w-5" />
-            Expense Distribution
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <PieChart className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className={`text-lg font-semibold ${isPrivate ? 'privacy-blur' : ''}`}>Expense Distribution</h3>
+              <p className={`text-sm text-muted-foreground ${isPrivate ? 'privacy-blur' : ''}`}>Category breakdown</p>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-48 sm:h-64 flex items-center justify-center text-muted-foreground">
-            No expenses to display
+        <CardContent className="pt-0">
+          <div className="h-48 sm:h-64 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                <PieChart className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">No expenses to display</p>
+              <p className="text-sm text-muted-foreground mt-1">Add some expenses to see the distribution</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -88,15 +134,20 @@ export const ExpenseDistributionChart = ({ expenses, isPrivate = false }: Expens
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <PieChart className="h-5 w-5" />
-          Expense Distribution
+    <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <PieChart className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className={`text-lg font-semibold ${isPrivate ? 'privacy-blur' : ''}`}>Expense Distribution</h3>
+            <p className={`text-sm text-muted-foreground ${isPrivate ? 'privacy-blur' : ''}`}>Category breakdown</p>
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-48 sm:h-64">
+      <CardContent className="pt-0">
+        <div className="h-48 sm:h-64 relative">
           <Doughnut data={data} options={options} />
         </div>
       </CardContent>

@@ -1,19 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Delete, Fingerprint } from 'lucide-react';
+import { Lock, Fingerprint } from 'lucide-react';
 
-interface PinScreenProps {
-  onPinCorrect: () => void;
-  attempts: number;
-  onIncrementAttempts: () => void;
+interface PatternScreenProps {
+  onPatternCorrect: () => void;
 }
 
-export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinScreenProps) => {
-  const [pin, setPin] = useState('');
+export const PatternScreen = ({ onPatternCorrect }: PatternScreenProps) => {
+  const [pattern, setPattern] = useState<number[]>([]);
   const [error, setError] = useState('');
   const [isFingerprint, setIsFingerprint] = useState(false);
-  const correctPin = '8848';
+  const correctPattern = [1, 2, 3, 5, 8, 9]; // Z pattern: 1-2-3-5-8-9
 
   // Check if WebAuthn is supported and if we're on mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -22,20 +20,19 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
     'credentials' in navigator && 
     'create' in navigator.credentials;
 
-  const handleNumberClick = (num: string) => {
-    if (pin.length < 4) {
-      const newPin = pin + num;
-      setPin(newPin);
+  const handleDotClick = (dotNumber: number) => {
+    if (pattern.length < 6 && !pattern.includes(dotNumber)) {
+      const newPattern = [...pattern, dotNumber];
+      setPattern(newPattern);
       setError('');
       
-      if (newPin.length === 4) {
-        if (newPin === correctPin) {
-          onPinCorrect();
+      if (newPattern.length === 6) {
+        if (JSON.stringify(newPattern) === JSON.stringify(correctPattern)) {
+          onPatternCorrect();
         } else {
-          setError('Incorrect PIN');
-          onIncrementAttempts();
+          setError('Incorrect pattern');
           setTimeout(() => {
-            setPin('');
+            setPattern([]);
             setError('');
           }, 1000);
         }
@@ -43,14 +40,18 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
     }
   };
 
-  const handleDelete = () => {
-    setPin(prev => prev.slice(0, -1));
+  const handleClear = () => {
+    setPattern([]);
     setError('');
   };
 
-  const handleClear = () => {
-    setPin('');
-    setError('');
+  const isDotActive = (dotNumber: number) => {
+    return pattern.includes(dotNumber);
+  };
+
+  const isDotConnected = (dotNumber: number) => {
+    const index = pattern.indexOf(dotNumber);
+    return index > 0 && pattern[index - 1] !== undefined;
   };
 
   const handleFingerprintAuth = async () => {
@@ -94,7 +95,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
 
         if (credential) {
           localStorage.setItem('webauthn-credential-id', credential.id);
-          onPinCorrect();
+          onPatternCorrect();
         }
       } else {
         // Authenticate with existing credential
@@ -113,7 +114,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
         });
 
         if (assertion) {
-          onPinCorrect();
+          onPatternCorrect();
         }
       }
     } catch (err) {
@@ -129,86 +130,53 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
       <Card className="w-full max-w-sm sm:max-w-md">
         <CardHeader className="text-center pb-4 sm:pb-6">
           <div className="flex justify-center mb-3 sm:mb-4">
-            <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
+            <Lock className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
           </div>
-          <CardTitle className="text-xl sm:text-2xl font-bold">Enter PIN</CardTitle>
-          <p className="text-sm sm:text-base text-muted-foreground">Please enter your 4-digit PIN to access the dashboard</p>
+          <CardTitle className="text-xl sm:text-2xl font-bold">Enter Pattern</CardTitle>
+          <p className="text-sm sm:text-base text-muted-foreground">Please draw the correct pattern to unlock</p>
         </CardHeader>
         
         <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
-          {/* PIN Display */}
-          <div className="flex justify-center space-x-3 sm:space-x-4">
-            {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 transition-colors ${
-                  pin.length > index
-                    ? 'bg-primary border-primary'
-                    : 'border-muted'
-                }`}
-              />
-            ))}
+          {/* Pattern Grid */}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 p-2 sm:p-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((dotNumber) => (
+                <button
+                  key={dotNumber}
+                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 transition-all duration-200 ${
+                    isDotActive(dotNumber)
+                      ? 'bg-primary border-primary scale-110'
+                      : 'border-muted hover:border-primary'
+                  }`}
+                  onClick={() => handleDotClick(dotNumber)}
+                >
+                  <div className={`w-full h-full rounded-full ${
+                    isDotActive(dotNumber) ? 'bg-primary' : 'bg-transparent'
+                  }`} />
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (
-            <div className="text-center text-danger text-sm font-medium">
+            <div className="text-center text-destructive text-sm font-medium">
               {error}
-              {attempts >= 3 && (
-                <div className="text-xs text-muted-foreground mt-1">
-                  Too many attempts. Please wait.
-                </div>
-              )}
             </div>
           )}
 
-          {/* Number Pad */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <Button
-                key={num}
-                variant="outline"
-                size="lg"
-                className="h-12 sm:h-16 text-lg sm:text-xl font-semibold"
-                onClick={() => handleNumberClick(num.toString())}
-                disabled={attempts >= 3}
-              >
-                {num}
-              </Button>
-            ))}
-            
+          {/* Clear Button */}
+          <div className="flex justify-center">
             <Button
               variant="outline"
-              size="lg"
-              className="h-12 sm:h-16 text-sm sm:text-base"
               onClick={handleClear}
-              disabled={attempts >= 3}
+              disabled={pattern.length === 0}
             >
-              Clear
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 sm:h-16 text-lg sm:text-xl font-semibold"
-              onClick={() => handleNumberClick('0')}
-              disabled={attempts >= 3}
-            >
-              0
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 sm:h-16"
-              onClick={handleDelete}
-              disabled={attempts >= 3}
-            >
-              <Delete className="h-4 w-4 sm:h-5 sm:w-5" />
+              Clear Pattern
             </Button>
           </div>
 
           <div className="text-center text-xs sm:text-sm text-muted-foreground">
-            Attempts: {attempts}/3
+            Draw the Z pattern to unlock
           </div>
 
           {/* Fingerprint Authentication for Mobile */}
@@ -219,7 +187,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
                 size="lg"
                 className="flex flex-col items-center gap-1.5 sm:gap-2 h-auto py-3 sm:py-4"
                 onClick={handleFingerprintAuth}
-                disabled={attempts >= 3 || isFingerprint}
+                disabled={isFingerprint}
               >
                 <Fingerprint className={`h-6 w-6 sm:h-8 sm:w-8 ${isFingerprint ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
                 <span className="text-xs sm:text-sm">

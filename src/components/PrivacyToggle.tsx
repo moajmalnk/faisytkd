@@ -13,14 +13,14 @@ export const PrivacyToggle = ({ isPrivate, onToggle }: PrivacyToggleProps) => {
       size="icon"
       onClick={onToggle}
       className="h-9 w-9"
-      title={isPrivate ? 'Show amounts' : 'Hide amounts'}
+      title={isPrivate ? 'Show amounts clearly' : 'Blur amounts'}
     >
       {isPrivate ? (
         <EyeOff className="h-4 w-4" />
       ) : (
         <Eye className="h-4 w-4" />
       )}
-      <span className="sr-only">Toggle privacy mode</span>
+      <span className="sr-only">Toggle privacy blur mode</span>
     </Button>
   );
 };

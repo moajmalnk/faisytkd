@@ -19,18 +19,27 @@ interface ExpenseListProps {
 }
 
 export const ExpenseList = ({ items, total, categories, onAdd, onUpdate, onDelete, isPrivate = false }: ExpenseListProps) => {
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<ExpenseItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<ExpenseItem | null>(null);
-  const [formData, setFormData] = useState({ name: '', amount: '', categoryId: '', date: '' });
+  const [formData, setFormData] = useState({ name: '', amount: '', categoryId: '', date: getTodayDate() });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.amount || !formData.categoryId || !formData.date) return;
+    
+    if (!formData.name || !formData.amount || !formData.categoryId || !formData.date) {
+      return;
+    }
 
     const amount = parseFloat(formData.amount);
-    if (isNaN(amount)) return;
-
+    if (isNaN(amount)) {
+      return;
+    }
+    
     if (editItem) {
       onUpdate(editItem.id, formData.name, amount, formData.categoryId, formData.date);
       setEditItem(null);
@@ -38,7 +47,7 @@ export const ExpenseList = ({ items, total, categories, onAdd, onUpdate, onDelet
       onAdd(formData.name, amount, formData.categoryId, formData.date);
       setIsAddOpen(false);
     }
-    setFormData({ name: '', amount: '', categoryId: '', date: '' });
+    setFormData({ name: '', amount: '', categoryId: '', date: getTodayDate() });
   };
 
   const openEdit = (item: ExpenseItem) => {
@@ -78,10 +87,6 @@ export const ExpenseList = ({ items, total, categories, onAdd, onUpdate, onDelet
     });
   };
 
-  const getTodayDate = () => {
-    return new Date().toISOString().split('T')[0];
-  };
-
   return (
     <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -95,11 +100,9 @@ export const ExpenseList = ({ items, total, categories, onAdd, onUpdate, onDelet
           </div>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="bg-danger hover:bg-danger/90 text-danger-foreground shadow-md">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Expense
-            </Button>
+          <DialogTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-danger hover:bg-danger/90 text-danger-foreground shadow-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Expense
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>

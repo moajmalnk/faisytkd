@@ -390,6 +390,7 @@ export const useBookkeeping = () => {
         categoryId,
         date,
       };
+      
       setData(prev => ({
         ...prev,
         income: [...prev.income, newItem],
@@ -449,6 +450,7 @@ export const useBookkeeping = () => {
         categoryId,
         date,
       };
+      
       setData(prev => ({
         ...prev,
         expense: [...prev.expense, newItem],

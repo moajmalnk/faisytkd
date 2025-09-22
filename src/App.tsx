@@ -13,18 +13,8 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then((registration) => {
-          console.log('SW registered: ', registration);
-        })
-        .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
-        });
-    }
-
-    // Handle service worker messages for notifications
+    // Service worker registration is handled by VitePWA plugin
+    // Just handle service worker messages for notifications
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {

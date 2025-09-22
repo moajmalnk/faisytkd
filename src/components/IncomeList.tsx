@@ -5,20 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit2, Trash2, Plus } from 'lucide-react';
-import { IncomeItem, Category } from '@/hooks/useBookkeeping';
+import { Edit2, Trash2, Plus, Filter } from 'lucide-react';
+import { IncomeItem, Category, Account } from '@/hooks/useBookkeeping';
 
 interface IncomeListProps {
   items: IncomeItem[];
   total: number;
   categories: Category[];
-  onAdd: (name: string, amount: number, categoryId: string, date: string) => void;
-  onUpdate: (id: string, name: string, amount: number, categoryId: string, date: string) => void;
+  accounts: Account[];
+  onAdd: (name: string, amount: number, categoryId: string, date: string, accountId: string) => void;
+  onUpdate: (id: string, name: string, amount: number, categoryId: string, date: string, accountId: string) => void;
   onDelete: (id: string) => void;
   isPrivate?: boolean;
+  isLoading?: boolean;
 }
 
-export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete, isPrivate = false }: IncomeListProps) => {
+export const IncomeList = ({ items, total, categories, accounts, onAdd, onUpdate, onDelete, isPrivate = false, isLoading = false }: IncomeListProps) => {
   const getTodayDate = () => {
     return new Date().toISOString().split('T')[0];
   };
@@ -26,12 +28,13 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<IncomeItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<IncomeItem | null>(null);
-  const [formData, setFormData] = useState({ name: '', amount: '', categoryId: '', date: getTodayDate() });
+  const [formData, setFormData] = useState({ name: '', amount: '', categoryId: '', date: getTodayDate(), accountId: '' });
+  const [filterPeriod, setFilterPeriod] = useState<string>('all');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.amount || !formData.categoryId || !formData.date) {
+    if (!formData.name || !formData.amount || !formData.categoryId || !formData.date || !formData.accountId) {
       return;
     }
 
@@ -41,18 +44,18 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
     }
     
     if (editItem) {
-      onUpdate(editItem.id, formData.name, amount, formData.categoryId, formData.date);
+      onUpdate(editItem.id, formData.name, amount, formData.categoryId, formData.date, formData.accountId);
       setEditItem(null);
     } else {
-      onAdd(formData.name, amount, formData.categoryId, formData.date);
+      onAdd(formData.name, amount, formData.categoryId, formData.date, formData.accountId);
       setIsAddOpen(false);
     }
-    setFormData({ name: '', amount: '', categoryId: '', date: getTodayDate() });
+    setFormData({ name: '', amount: '', categoryId: '', date: getTodayDate(), accountId: '' });
   };
 
   const openEdit = (item: IncomeItem) => {
     setEditItem(item);
-    setFormData({ name: item.name, amount: item.amount.toString(), categoryId: item.categoryId, date: item.date });
+    setFormData({ name: item.name, amount: item.amount.toString(), categoryId: item.categoryId, date: item.date, accountId: item.accountId || '' });
   };
 
   const handleDeleteConfirm = () => {
@@ -76,7 +79,47 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
     return category ? category.color : 'hsl(0 0% 50%)';
   };
 
+  const getAccountName = (accountId: string) => {
+    const account = accounts.find(acc => acc.id === accountId);
+    return account ? account.name : 'Unknown Account';
+  };
+
   const incomeCategories = categories.filter(cat => cat.type === 'income');
+
+  const getFilteredItems = () => {
+    if (filterPeriod === 'all') return items;
+    
+    const now = new Date();
+    const filterDate = new Date();
+    
+    switch (filterPeriod) {
+      case 'day':
+        filterDate.setDate(now.getDate() - 1);
+        break;
+      case 'week':
+        filterDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        filterDate.setMonth(now.getMonth() - 1);
+        break;
+      case '3month':
+        filterDate.setMonth(now.getMonth() - 3);
+        break;
+      case '6month':
+        filterDate.setMonth(now.getMonth() - 6);
+        break;
+      case 'yearly':
+        filterDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        return items;
+    }
+    
+    return items.filter(item => new Date(item.date) >= filterDate);
+  };
+
+  const filteredItems = getFilteredItems();
+  const filteredTotal = filteredItems.reduce((sum, item) => sum + item.amount, 0);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -99,7 +142,22 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
             <p className={`text-sm text-muted-foreground ${isPrivate ? 'privacy-blur' : ''}`}>Track your earnings</p>
           </div>
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <div className="flex gap-2">
+          <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+            <SelectTrigger className="w-32 h-9">
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="day">Today</SelectItem>
+              <SelectItem value="week">Week</SelectItem>
+              <SelectItem value="month">Month</SelectItem>
+              <SelectItem value="3month">3 Months</SelectItem>
+              <SelectItem value="6month">6 Months</SelectItem>
+              <SelectItem value="yearly">Year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-success hover:bg-success/90 text-success-foreground shadow-md">
             <Plus className="h-4 w-4 mr-2" />
             Add Income
@@ -159,16 +217,44 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full h-11 bg-success hover:bg-success/90 text-success-foreground">
-                Add Income Entry
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Account</label>
+                <Select value={formData.accountId} onValueChange={(value) => setFormData({ ...formData, accountId: value })}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              account.type === 'cash' ? 'bg-green-500' :
+                              account.type === 'bank' ? 'bg-blue-500' :
+                              'bg-orange-500'
+                            }`} />
+                            <span>{account.name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            ₹{account.amount.toLocaleString()}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full h-11 bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                {isLoading ? "Adding..." : "Add Income Entry"}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <div key={item.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-success/5 to-success/10 border border-success/20 rounded-xl hover:shadow-md transition-all duration-200 gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
@@ -179,7 +265,12 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
                   <p className={`font-semibold text-foreground truncate ${isPrivate ? 'privacy-blur' : ''}`}>{item.name}</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">{getCategoryName(item.categoryId)}</p>
+                  <div className="flex flex-col">
+                    <p className="text-sm text-muted-foreground">{getCategoryName(item.categoryId)}</p>
+                    {item.accountId && (
+                      <p className="text-xs text-muted-foreground">Account: {getAccountName(item.accountId)}</p>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
                 </div>
                 <div className="mt-2">
@@ -231,9 +322,9 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
           <div className="flex justify-between items-center p-4 bg-gradient-to-r from-success/10 to-success/5 rounded-lg border border-success/20">
             <div>
               <span className="font-semibold text-foreground">Total Income</span>
-              <p className={`text-sm text-muted-foreground ${isPrivate ? 'privacy-blur' : ''}`}>{items.length} transaction{items.length !== 1 ? 's' : ''}</p>
+              <p className={`text-sm text-muted-foreground ${isPrivate ? 'privacy-blur' : ''}`}>{filteredItems.length} transaction{filteredItems.length !== 1 ? 's' : ''}</p>
             </div>
-            <span className={`text-2xl font-bold text-success ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(total)}</span>
+            <span className={`text-2xl font-bold text-success ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(filteredTotal)}</span>
           </div>
         </div>
 
@@ -294,8 +385,35 @@ export const IncomeList = ({ items, total, categories, onAdd, onUpdate, onDelete
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full h-11 bg-success hover:bg-success/90 text-success-foreground">
-                Update Income Entry
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Account</label>
+                <Select value={formData.accountId} onValueChange={(value) => setFormData({ ...formData, accountId: value })}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              account.type === 'cash' ? 'bg-green-500' :
+                              account.type === 'bank' ? 'bg-blue-500' :
+                              'bg-orange-500'
+                            }`} />
+                            <span>{account.name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            ₹{account.amount.toLocaleString()}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full h-11 bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                {isLoading ? "Updating..." : "Update Income Entry"}
               </Button>
             </form>
           </DialogContent>

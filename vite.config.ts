@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    headers: {
+      'Service-Worker-Allowed': '/',
+    },
   },
   plugins: [
     react(), 
@@ -55,13 +58,8 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: 'favicon.ico',
-            sizes: '64x64 32x32 24x24 16x16',
-            type: 'image/x-icon'
-          },
-          {
             src: 'icons/icon.svg',
-            sizes: '512x512',
+            sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable'
           }

@@ -27,6 +27,7 @@ const Index = () => {
     totals,
     analytics,
     isLoading,
+    operationLoading,
     addCollectItem,
     updateCollectItem,
     deleteCollectItem,
@@ -245,20 +246,34 @@ const Index = () => {
             items={data.income}
             total={totals.income}
             categories={data.categories}
+            accounts={Object.entries(data.accounts).map(([key, account]) => ({
+              id: account.id,
+              name: account.name,
+              type: account.type,
+              amount: account.amount,
+            }))}
             onAdd={addIncomeItem}
             onUpdate={updateIncomeItem}
             onDelete={deleteIncomeItem}
             isPrivate={isPrivate}
+            isLoading={operationLoading.addIncome || operationLoading.updateIncome || operationLoading.deleteIncome}
           />
 
           <ExpenseList
             items={data.expense}
             total={totals.expense}
             categories={data.categories}
+            accounts={Object.entries(data.accounts).map(([key, account]) => ({
+              id: account.id,
+              name: account.name,
+              type: account.type,
+              amount: account.amount,
+            }))}
             onAdd={addExpenseItem}
             onUpdate={updateExpenseItem}
             onDelete={deleteExpenseItem}
             isPrivate={isPrivate}
+            isLoading={operationLoading.addExpense || operationLoading.updateExpense || operationLoading.deleteExpense}
           />
         </div>
 

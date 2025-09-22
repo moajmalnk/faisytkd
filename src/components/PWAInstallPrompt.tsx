@@ -35,10 +35,10 @@ export function PWAInstallPrompt() {
 
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
+      e.preventDefault(); // Prevent the default browser install prompt
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Show prompt after a delay to not be too aggressive
+      // Show our custom prompt after a delay to not be too aggressive
       setTimeout(() => {
         setShowPrompt(true);
       }, 3000);

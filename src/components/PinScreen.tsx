@@ -98,10 +98,15 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
         }
       } else {
         // Authenticate with existing credential
+        // Convert base64url to base64 for atob()
+        const base64Credential = existingCredential.replace(/-/g, '+').replace(/_/g, '/');
+        // Add padding if needed
+        const paddedCredential = base64Credential + '='.repeat((4 - base64Credential.length % 4) % 4);
+        
         const publicKeyCredentialRequestOptions = {
           challenge: new Uint8Array(32),
           allowCredentials: [{
-            id: Uint8Array.from(atob(existingCredential), c => c.charCodeAt(0)),
+            id: Uint8Array.from(atob(paddedCredential), c => c.charCodeAt(0)),
             type: 'public-key' as const,
           }],
           userVerification: "required" as const,

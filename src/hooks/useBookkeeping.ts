@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AccountsAPI, CategoriesAPI, TransactionsAPI } from '@/lib/api';
 import { bookkeepingNotifications } from '@/lib/notifications';
 import { useNotificationSettings } from '@/components/NotificationSettings';
+import { toast } from '@/hooks/use-toast';
 
 export interface CollectItem {
   id: string;
@@ -30,6 +31,7 @@ export interface IncomeItem {
   amount: number;
   categoryId: string;
   date: string; // ISO date string (YYYY-MM-DD)
+  accountId?: string;
 }
 
 export interface ExpenseItem {
@@ -38,6 +40,7 @@ export interface ExpenseItem {
   amount: number;
   categoryId: string;
   date: string; // ISO date string (YYYY-MM-DD)
+  accountId?: string;
 }
 
 export interface Account {
@@ -51,6 +54,7 @@ export interface AccountData {
   amount: number;
   name: string;
   type: 'cash' | 'bank' | 'credit';
+  id: string;
 }
 
 export interface Accounts {
@@ -86,10 +90,10 @@ const initialData: BookkeepingData = {
     { id: '3', name: 'CODO', amount: 173737, completed: false },
   ],
   accounts: {
-    cash: { amount: 15740, name: 'Cash', type: 'cash' },
-    kotak: { amount: 94337.83, name: 'Kotak Bank', type: 'bank' },
-    federal: { amount: 60791, name: 'Federal Bank', type: 'bank' },
-    creditcard: { amount: 24836.04, name: 'Credit Card', type: 'credit' },
+    cash: { amount: 15740, name: 'Cash', type: 'cash', id: '1' },
+    kotak: { amount: 94337.83, name: 'Kotak Bank', type: 'bank', id: '2' },
+    federal: { amount: 60791, name: 'Federal Bank', type: 'bank', id: '3' },
+    creditcard: { amount: 24836.04, name: 'Credit Card', type: 'credit', id: '4' },
   },
   income: [
     { id: '1', name: 'Freelance Project', amount: 12000, categoryId: 'inc-1', date: '2024-01-15' },
@@ -113,90 +117,222 @@ const initialData: BookkeepingData = {
 export const useBookkeeping = () => {
   const [data, setData] = useState<BookkeepingData>(initialData);
   const [isLoading, setIsLoading] = useState(true);
+  const [operationLoading, setOperationLoading] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  // Helper function to handle account balance transfers
+  const handleAccountTransfer = useCallback((
+    oldAccountId: string | undefined,
+    oldAmount: number,
+    newAccountId: string,
+    newAmount: number,
+    isIncome: boolean = true
+  ) => {
+    const oldAccountKey = oldAccountId ? Object.keys(data.accounts).find(key => {
+      const account = data.accounts[key];
+      return account.id === oldAccountId;
+    }) : null;
+
+    const newAccountKey = newAccountId ? Object.keys(data.accounts).find(key => {
+      const account = data.accounts[key];
+      return account.id === newAccountId;
+    }) : null;
+
+    setData(prev => {
+      const newAccounts = { ...prev.accounts };
+
+      // Handle old account (reverse the previous transaction effect)
+      if (oldAccountKey && oldAccountKey !== newAccountKey) {
+        if (isIncome) {
+          // For income: subtract the old amount (reverse income effect)
+          newAccounts[oldAccountKey] = {
+            ...newAccounts[oldAccountKey],
+            amount: newAccounts[oldAccountKey].amount - oldAmount,
+          };
+        } else {
+          // For expense: add back the old amount (reverse expense effect)
+          newAccounts[oldAccountKey] = {
+            ...newAccounts[oldAccountKey],
+            amount: newAccounts[oldAccountKey].amount + oldAmount,
+          };
+        }
+      }
+
+      // Handle new account (apply the new transaction effect)
+      if (newAccountKey) {
+        if (oldAccountKey === newAccountKey) {
+          // Same account, just adjust the difference
+          const amountDifference = newAmount - oldAmount;
+          if (isIncome) {
+            newAccounts[newAccountKey] = {
+              ...newAccounts[newAccountKey],
+              amount: newAccounts[newAccountKey].amount + amountDifference,
+            };
+          } else {
+            newAccounts[newAccountKey] = {
+              ...newAccounts[newAccountKey],
+              amount: newAccounts[newAccountKey].amount - amountDifference,
+            };
+          }
+        } else {
+          // Different account, apply the full new amount
+          if (isIncome) {
+            newAccounts[newAccountKey] = {
+              ...newAccounts[newAccountKey],
+              amount: newAccounts[newAccountKey].amount + newAmount,
+            };
+          } else {
+            newAccounts[newAccountKey] = {
+              ...newAccounts[newAccountKey],
+              amount: newAccounts[newAccountKey].amount - newAmount,
+            };
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        accounts: newAccounts,
+      };
+    });
+  }, [data.accounts]);
+
+  // Helper function for optimistic updates with rollback
+  const optimisticUpdate = useCallback(async <T>(
+    operationKey: string,
+    optimisticUpdateFn: () => void,
+    apiCall: () => Promise<T>,
+    successCallback?: (result: T) => void,
+    errorMessage?: string
+  ) => {
+    setOperationLoading(prev => ({ ...prev, [operationKey]: true }));
+    
+    try {
+      // Apply optimistic update immediately
+      optimisticUpdateFn();
+      
+      // Perform API call
+      const result = await apiCall();
+      
+      // Success callback if provided
+      if (successCallback) {
+        successCallback(result);
+      }
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Operation completed successfully",
+        variant: "default",
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`${operationKey} failed:`, error);
+      
+      // Show error toast
+      toast({
+        title: "Error",
+        description: errorMessage || "Operation failed. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Reload data to ensure consistency
+      await loadData();
+      
+      throw error;
+    } finally {
+      setOperationLoading(prev => ({ ...prev, [operationKey]: false }));
+    }
+  }, []);
+
+  // Reload data function
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Start with local defaults
+      let next = { ...initialData } as BookkeepingData;
+
+      // Fetch categories, accounts, and transactions from backend
+      const [catsRes, accRes, transRes] = await Promise.all([
+        CategoriesAPI.list(),
+        AccountsAPI.list(),
+        TransactionsAPI.list(),
+      ]);
+
+      if (catsRes?.ok) {
+        next.categories = catsRes.items.map(c => ({
+          id: String(c.id),
+          name: c.name,
+          type: c.type,
+          color: c.color,
+        }));
+      }
+
+      if (accRes?.ok) {
+        const accounts: Accounts = {};
+        accRes.items.forEach(a => {
+          const key = a.name.toLowerCase().replace(/\s+/g, '');
+          accounts[key] = { amount: a.amount, name: a.name, type: a.type, id: String(a.id) };
+        });
+        next.accounts = accounts;
+      }
+
+      if (transRes?.ok) {
+        next.collect = transRes.items
+          .filter(t => t.kind === 'collect')
+          .map(t => ({
+            id: String(t.id),
+            name: t.note || 'Collect Item',
+            amount: t.amount,
+            completed: t.completed || false,
+          }));
+
+        next.pay = transRes.items
+          .filter(t => t.kind === 'pay')
+          .map(t => ({
+            id: String(t.id),
+            name: t.note || 'Pay Item',
+            amount: t.amount,
+            completed: t.completed || false,
+          }));
+
+        next.income = transRes.items
+          .filter(t => t.kind === 'income')
+          .map(t => ({
+            id: String(t.id),
+            name: t.note || 'Income Item',
+            amount: t.amount,
+            categoryId: t.category_id ? String(t.category_id) : '',
+            date: t.occurred_on,
+            accountId: t.account_id ? String(t.account_id) : '',
+          }));
+
+        next.expense = transRes.items
+          .filter(t => t.kind === 'expense')
+          .map(t => ({
+            id: String(t.id),
+            name: t.note || 'Expense Item',
+            amount: t.amount,
+            categoryId: t.category_id ? String(t.category_id) : '',
+            date: t.occurred_on,
+            accountId: t.account_id ? String(t.account_id) : '',
+          }));
+      }
+
+      setData(next);
+    } catch (e) {
+      console.error('Load failed, using local data', e);
+      setData(initialData);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // Start with local defaults
-        let next = { ...initialData } as BookkeepingData;
-
-        // Fetch categories, accounts, and transactions from backend
-        const [catsRes, accRes, transRes] = await Promise.all([
-          CategoriesAPI.list(),
-          AccountsAPI.list(),
-          TransactionsAPI.list(),
-        ]);
-
-        if (catsRes?.ok) {
-          next.categories = catsRes.items.map(c => ({
-            id: String(c.id),
-            name: c.name,
-            type: c.type,
-            color: c.color,
-          }));
-        }
-
-        if (accRes?.ok) {
-          const accounts: Accounts = {};
-          accRes.items.forEach(a => {
-            const key = a.name.toLowerCase().replace(/\s+/g, '');
-            accounts[key] = { amount: a.amount, name: a.name, type: a.type };
-          });
-          next.accounts = accounts;
-        }
-
-        if (transRes?.ok) {
-          next.collect = transRes.items
-            .filter(t => t.kind === 'collect')
-            .map(t => ({
-              id: String(t.id),
-              name: t.note || 'Collect Item',
-              amount: t.amount,
-              completed: t.completed || false,
-            }));
-
-          next.pay = transRes.items
-            .filter(t => t.kind === 'pay')
-            .map(t => ({
-              id: String(t.id),
-              name: t.note || 'Pay Item',
-              amount: t.amount,
-              completed: t.completed || false,
-            }));
-
-          next.income = transRes.items
-            .filter(t => t.kind === 'income')
-            .map(t => ({
-              id: String(t.id),
-              name: t.note || 'Income Item',
-              amount: t.amount,
-              categoryId: t.category_id ? String(t.category_id) : '',
-              date: t.occurred_on,
-            }));
-
-          next.expense = transRes.items
-            .filter(t => t.kind === 'expense')
-            .map(t => ({
-              id: String(t.id),
-              name: t.note || 'Expense Item',
-              amount: t.amount,
-              categoryId: t.category_id ? String(t.category_id) : '',
-              date: t.occurred_on,
-            }));
-        }
-
-        setData(next);
-      } catch (e) {
-        console.error('Load failed, using local data', e);
-        setData(initialData);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     localStorage.setItem('bookkeeping-data', JSON.stringify(data));
@@ -375,140 +511,445 @@ export const useBookkeeping = () => {
     }));
   };
 
-  const addIncomeItem = async (name: string, amount: number, categoryId: string, date: string) => {
-    try {
-      const res = await TransactionsAPI.create({
-        kind: 'income',
-        amount,
-        note: name,
-        category_id: categoryId ? Number(categoryId) : null,
-        occurred_on: date,
-      });
-      
-      const newItem: IncomeItem = {
-        id: String(res.id ?? Date.now()),
-        name,
-        amount,
-        categoryId,
-        date,
-      };
-      
-      setData(prev => ({
-        ...prev,
-        income: [...prev.income, newItem],
-      }));
+  const updateAccountBalance = async (accountKey: string, newAmount: number) => {
+    // Update local state
+    setData(prev => ({
+      ...prev,
+      accounts: {
+        ...prev.accounts,
+        [accountKey]: {
+          ...prev.accounts[accountKey],
+          amount: newAmount,
+        },
+      },
+    }));
 
-      // Send notification for income added
-      try {
-        const category = data.categories.find(c => c.id === categoryId);
-        await bookkeepingNotifications.notifyTransactionAdded('income', amount, category?.name || 'Uncategorized');
-      } catch (notificationError) {
-        console.warn('Failed to send income notification:', notificationError);
+    // Update backend
+    try {
+      const account = data.accounts[accountKey];
+      const accountList = await AccountsAPI.list();
+      const backendAccount = accountList.items.find(a => a.name === account.name);
+      
+      if (backendAccount) {
+        await AccountsAPI.update(backendAccount.id, {
+          name: account.name,
+          type: account.type,
+          amount: newAmount,
+        });
       }
-    } catch (e) {
-      console.error('addIncomeItem failed', e);
+    } catch (error) {
+      console.error('Failed to update account balance in backend:', error);
     }
   };
 
-  const updateIncomeItem = async (id: string, name: string, amount: number, categoryId: string, date: string) => {
-    try {
-      await TransactionsAPI.update(Number(id), {
-        kind: 'income',
-        amount,
-        note: name,
-        category_id: categoryId ? Number(categoryId) : null,
-        occurred_on: date,
-      });
-      
-      setData(prev => ({
-        ...prev,
-        income: prev.income.map(item =>
-          item.id === id ? { ...item, name, amount, categoryId, date } : item
-        ),
-      }));
-    } catch (e) {
-      console.error('updateIncomeItem failed', e);
-    }
+  const addIncomeItem = async (name: string, amount: number, categoryId: string, date: string, accountId: string) => {
+    return optimisticUpdate(
+      'addIncome',
+      () => {
+        // Optimistic update - add item immediately
+        const tempId = `temp_${Date.now()}`;
+        const newItem: IncomeItem = {
+          id: tempId,
+          name,
+          amount,
+          categoryId,
+          date,
+          accountId,
+        };
+        
+        setData(prev => ({
+          ...prev,
+          income: [...prev.income, newItem],
+        }));
+
+        // Optimistic account balance update
+        if (accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === accountId;
+          });
+          
+          if (accountKey) {
+            setData(prev => ({
+              ...prev,
+              accounts: {
+                ...prev.accounts,
+                [accountKey]: {
+                  ...prev.accounts[accountKey],
+                  amount: prev.accounts[accountKey].amount + amount,
+                },
+              },
+            }));
+          }
+        }
+      },
+      async () => {
+        // API call
+        const res = await TransactionsAPI.create({
+          kind: 'income',
+          amount,
+          note: name,
+          category_id: categoryId ? Number(categoryId) : null,
+          account_id: accountId ? Number(accountId) : null,
+          occurred_on: date,
+        });
+        
+        return res;
+      },
+      async (result) => {
+        // Success callback - update with real ID and sync account balance
+        setData(prev => ({
+          ...prev,
+          income: prev.income.map(item => 
+            item.id.startsWith('temp_') ? { ...item, id: String(result.id) } : item
+          ),
+        }));
+
+        // Update account balance in backend
+        if (accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === accountId;
+          });
+          
+          if (accountKey) {
+            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
+          }
+        }
+
+        // Send notification
+        try {
+          const category = data.categories.find(c => c.id === categoryId);
+          await bookkeepingNotifications.notifyTransactionAdded('income', amount, category?.name || 'Uncategorized');
+        } catch (notificationError) {
+          console.warn('Failed to send income notification:', notificationError);
+        }
+      },
+      'Failed to add income item'
+    );
+  };
+
+  const updateIncomeItem = async (id: string, name: string, amount: number, categoryId: string, date: string, accountId: string) => {
+    const existingItem = data.income.find(item => item.id === id);
+    if (!existingItem) return;
+
+    return optimisticUpdate(
+      'updateIncome',
+      () => {
+        // Update the item immediately
+        setData(prev => ({
+          ...prev,
+          income: prev.income.map(item =>
+            item.id === id ? { ...item, name, amount, categoryId, date, accountId } : item
+          ),
+        }));
+
+        // Handle account balance changes
+        handleAccountTransfer(
+          existingItem.accountId,
+          existingItem.amount,
+          accountId,
+          amount,
+          true // isIncome
+        );
+      },
+      async () => {
+        // API call
+        await TransactionsAPI.update(Number(id), {
+          kind: 'income',
+          amount,
+          note: name,
+          category_id: categoryId ? Number(categoryId) : null,
+          account_id: accountId ? Number(accountId) : null,
+          occurred_on: date,
+        });
+        
+        return { id };
+      },
+      async () => {
+        // Success callback - sync account balances in backend
+        const oldAccountId = existingItem.accountId;
+        const oldAccountKey = oldAccountId ? Object.keys(data.accounts).find(key => {
+          const account = data.accounts[key];
+          return account.id === oldAccountId;
+        }) : null;
+
+        const newAccountKey = accountId ? Object.keys(data.accounts).find(key => {
+          const account = data.accounts[key];
+          return account.id === accountId;
+        }) : null;
+
+        // Update both accounts in backend if they changed
+        if (oldAccountKey && oldAccountKey !== newAccountKey) {
+          await updateAccountBalance(oldAccountKey, data.accounts[oldAccountKey].amount);
+        }
+        if (newAccountKey) {
+          await updateAccountBalance(newAccountKey, data.accounts[newAccountKey].amount);
+        }
+      },
+      'Failed to update income item'
+    );
   };
 
   const deleteIncomeItem = async (id: string) => {
-    try {
-      await TransactionsAPI.delete(Number(id));
-      setData(prev => ({
-        ...prev,
-        income: prev.income.filter(item => item.id !== id),
-      }));
-    } catch (e) {
-      console.error('deleteIncomeItem failed', e);
-    }
+    const itemToDelete = data.income.find(item => item.id === id);
+    if (!itemToDelete) return;
+
+    return optimisticUpdate(
+      'deleteIncome',
+      () => {
+        // Optimistic update - remove item immediately
+        setData(prev => ({
+          ...prev,
+          income: prev.income.filter(item => item.id !== id),
+        }));
+
+        // Optimistic account balance update (reverse the income effect)
+        if (itemToDelete.accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === itemToDelete.accountId;
+          });
+          
+          if (accountKey) {
+            setData(prev => ({
+              ...prev,
+              accounts: {
+                ...prev.accounts,
+                [accountKey]: {
+                  ...prev.accounts[accountKey],
+                  amount: prev.accounts[accountKey].amount - itemToDelete.amount,
+                },
+              },
+            }));
+          }
+        }
+      },
+      async () => {
+        // API call
+        await TransactionsAPI.delete(Number(id));
+        return { id };
+      },
+      async () => {
+        // Success callback - sync account balance in backend
+        if (itemToDelete.accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === itemToDelete.accountId;
+          });
+          
+          if (accountKey) {
+            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
+          }
+        }
+      },
+      'Failed to delete income item'
+    );
   };
 
-  const addExpenseItem = async (name: string, amount: number, categoryId: string, date: string) => {
-    try {
-      const res = await TransactionsAPI.create({
-        kind: 'expense',
-        amount,
-        note: name,
-        category_id: categoryId ? Number(categoryId) : null,
-        occurred_on: date,
-      });
-      
-      const newItem: ExpenseItem = {
-        id: String(res.id ?? Date.now()),
-        name,
-        amount,
-        categoryId,
-        date,
-      };
-      
-      setData(prev => ({
-        ...prev,
-        expense: [...prev.expense, newItem],
-      }));
+  const addExpenseItem = async (name: string, amount: number, categoryId: string, date: string, accountId: string) => {
+    return optimisticUpdate(
+      'addExpense',
+      () => {
+        // Optimistic update - add item immediately
+        const tempId = `temp_${Date.now()}`;
+        const newItem: ExpenseItem = {
+          id: tempId,
+          name,
+          amount,
+          categoryId,
+          date,
+          accountId,
+        };
+        
+        setData(prev => ({
+          ...prev,
+          expense: [...prev.expense, newItem],
+        }));
 
-      // Send notification for expense added
-      try {
-        const category = data.categories.find(c => c.id === categoryId);
-        await bookkeepingNotifications.notifyTransactionAdded('expense', amount, category?.name || 'Uncategorized');
-      } catch (notificationError) {
-        console.warn('Failed to send expense notification:', notificationError);
-      }
-    } catch (e) {
-      console.error('addExpenseItem failed', e);
-    }
+        // Optimistic account balance update (decrease balance)
+        if (accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === accountId;
+          });
+          
+          if (accountKey) {
+            setData(prev => ({
+              ...prev,
+              accounts: {
+                ...prev.accounts,
+                [accountKey]: {
+                  ...prev.accounts[accountKey],
+                  amount: prev.accounts[accountKey].amount - amount,
+                },
+              },
+            }));
+          }
+        }
+      },
+      async () => {
+        // API call
+        const res = await TransactionsAPI.create({
+          kind: 'expense',
+          amount,
+          note: name,
+          category_id: categoryId ? Number(categoryId) : null,
+          account_id: accountId ? Number(accountId) : null,
+          occurred_on: date,
+        });
+        
+        return res;
+      },
+      async (result) => {
+        // Success callback - update with real ID and sync account balance
+        setData(prev => ({
+          ...prev,
+          expense: prev.expense.map(item => 
+            item.id.startsWith('temp_') ? { ...item, id: String(result.id) } : item
+          ),
+        }));
+
+        // Update account balance in backend
+        if (accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === accountId;
+          });
+          
+          if (accountKey) {
+            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
+          }
+        }
+
+        // Send notification
+        try {
+          const category = data.categories.find(c => c.id === categoryId);
+          await bookkeepingNotifications.notifyTransactionAdded('expense', amount, category?.name || 'Uncategorized');
+        } catch (notificationError) {
+          console.warn('Failed to send expense notification:', notificationError);
+        }
+      },
+      'Failed to add expense item'
+    );
   };
 
-  const updateExpenseItem = async (id: string, name: string, amount: number, categoryId: string, date: string) => {
-    try {
-      await TransactionsAPI.update(Number(id), {
-        kind: 'expense',
-        amount,
-        note: name,
-        category_id: categoryId ? Number(categoryId) : null,
-        occurred_on: date,
-      });
-      
-      setData(prev => ({
-        ...prev,
-        expense: prev.expense.map(item =>
-          item.id === id ? { ...item, name, amount, categoryId, date } : item
-        ),
-      }));
-    } catch (e) {
-      console.error('updateExpenseItem failed', e);
-    }
+  const updateExpenseItem = async (id: string, name: string, amount: number, categoryId: string, date: string, accountId: string) => {
+    const existingItem = data.expense.find(item => item.id === id);
+    if (!existingItem) return;
+
+    return optimisticUpdate(
+      'updateExpense',
+      () => {
+        // Update the item immediately
+        setData(prev => ({
+          ...prev,
+          expense: prev.expense.map(item =>
+            item.id === id ? { ...item, name, amount, categoryId, date, accountId } : item
+          ),
+        }));
+
+        // Handle account balance changes
+        handleAccountTransfer(
+          existingItem.accountId,
+          existingItem.amount,
+          accountId,
+          amount,
+          false // isIncome (false for expense)
+        );
+      },
+      async () => {
+        // API call
+        await TransactionsAPI.update(Number(id), {
+          kind: 'expense',
+          amount,
+          note: name,
+          category_id: categoryId ? Number(categoryId) : null,
+          account_id: accountId ? Number(accountId) : null,
+          occurred_on: date,
+        });
+        
+        return { id };
+      },
+      async () => {
+        // Success callback - sync account balances in backend
+        const oldAccountId = existingItem.accountId;
+        const oldAccountKey = oldAccountId ? Object.keys(data.accounts).find(key => {
+          const account = data.accounts[key];
+          return account.id === oldAccountId;
+        }) : null;
+
+        const newAccountKey = accountId ? Object.keys(data.accounts).find(key => {
+          const account = data.accounts[key];
+          return account.id === accountId;
+        }) : null;
+
+        // Update both accounts in backend if they changed
+        if (oldAccountKey && oldAccountKey !== newAccountKey) {
+          await updateAccountBalance(oldAccountKey, data.accounts[oldAccountKey].amount);
+        }
+        if (newAccountKey) {
+          await updateAccountBalance(newAccountKey, data.accounts[newAccountKey].amount);
+        }
+      },
+      'Failed to update expense item'
+    );
   };
 
   const deleteExpenseItem = async (id: string) => {
-    try {
-      await TransactionsAPI.delete(Number(id));
-      setData(prev => ({
-        ...prev,
-        expense: prev.expense.filter(item => item.id !== id),
-      }));
-    } catch (e) {
-      console.error('deleteExpenseItem failed', e);
-    }
+    const itemToDelete = data.expense.find(item => item.id === id);
+    if (!itemToDelete) return;
+
+    return optimisticUpdate(
+      'deleteExpense',
+      () => {
+        // Optimistic update - remove item immediately
+        setData(prev => ({
+          ...prev,
+          expense: prev.expense.filter(item => item.id !== id),
+        }));
+
+        // Optimistic account balance update (reverse the expense effect)
+        if (itemToDelete.accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === itemToDelete.accountId;
+          });
+          
+          if (accountKey) {
+            setData(prev => ({
+              ...prev,
+              accounts: {
+                ...prev.accounts,
+                [accountKey]: {
+                  ...prev.accounts[accountKey],
+                  amount: prev.accounts[accountKey].amount + itemToDelete.amount,
+                },
+              },
+            }));
+          }
+        }
+      },
+      async () => {
+        // API call
+        await TransactionsAPI.delete(Number(id));
+        return { id };
+      },
+      async () => {
+        // Success callback - sync account balance in backend
+        if (itemToDelete.accountId) {
+          const accountKey = Object.keys(data.accounts).find(key => {
+            const account = data.accounts[key];
+            return account.id === itemToDelete.accountId;
+          });
+          
+          if (accountKey) {
+            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
+          }
+        }
+      },
+      'Failed to delete expense item'
+    );
   };
 
   const addCategory = async (name: string, type: 'income' | 'expense', color: string) => {
@@ -562,15 +1003,19 @@ export const useBookkeeping = () => {
   };
 
   const addAccount = async (name: string, type: 'cash' | 'bank' | 'credit', amount: number) => {
-    try { await AccountsAPI.create({ name, type, amount }); } catch {}
-    const accountId = name.toLowerCase().replace(/\s+/g, '');
-    setData(prev => ({
-      ...prev,
-      accounts: {
-        ...prev.accounts,
-        [accountId]: { amount, name, type },
-      },
-    }));
+    try { 
+      const res = await AccountsAPI.create({ name, type, amount });
+      const accountKey = name.toLowerCase().replace(/\s+/g, '');
+      setData(prev => ({
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [accountKey]: { amount, name, type, id: String(res.id) },
+        },
+      }));
+    } catch (e) {
+      console.error('addAccount failed', e);
+    }
   };
 
   const deleteAccount = async (accountId: string) => {
@@ -598,6 +1043,7 @@ export const useBookkeeping = () => {
     totals,
     analytics,
     isLoading,
+    operationLoading,
     addCollectItem,
     updateCollectItem,
     deleteCollectItem,

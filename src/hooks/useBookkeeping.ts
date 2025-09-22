@@ -422,17 +422,46 @@ export const useBookkeeping = () => {
     }
   };
 
-  const updateAccount = (account: keyof Accounts, amount: number) => {
-    setData(prev => ({
-      ...prev,
-      accounts: {
-        ...prev.accounts,
-        [account]: {
-          ...prev.accounts[account],
-          amount,
+  const updateAccount = async (account: keyof Accounts, amount: number) => {
+    try {
+      // Get the account ID from the account data
+      const accountData = data.accounts[account];
+      if (!accountData || !accountData.id) {
+        console.error('Account not found or missing ID:', account);
+        return;
+      }
+
+      // Update the account via API
+      await AccountsAPI.update(parseInt(accountData.id), {
+        name: accountData.name,
+        type: accountData.type,
+        amount: amount
+      });
+
+      // Update local state only after successful API call
+      setData(prev => ({
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [account]: {
+            ...prev.accounts[account],
+            amount,
+          },
         },
-      },
-    }));
+      }));
+
+      toast({
+        title: "Account Updated",
+        description: `${accountData.name} balance updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Failed to update account:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update account balance. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
 

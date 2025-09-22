@@ -1,0 +1,31 @@
+{
+  "security": {
+    "headers": {
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "X-XSS-Protection": "1; mode=block",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    },
+    "protection": {
+      "disableConsole": true,
+      "disableRightClick": true,
+      "disableDevTools": true,
+      "disableTextSelection": true,
+      "preventIframeEmbedding": true,
+      "detectSuspiciousActivity": true,
+      "clearSensitiveData": true
+    },
+    "monitoring": {
+      "maxMouseMovements": 10000,
+      "maxKeystrokes": 1000,
+      "devToolsCheckInterval": 1000,
+      "dataClearInterval": 30000
+    }
+  }
+}

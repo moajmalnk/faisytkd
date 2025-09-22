@@ -121,82 +121,6 @@ export const useBookkeeping = () => {
     [key: string]: boolean;
   }>({});
 
-  // Helper function to handle account balance transfers
-  const handleAccountTransfer = useCallback((
-    oldAccountId: string | undefined,
-    oldAmount: number,
-    newAccountId: string,
-    newAmount: number,
-    isIncome: boolean = true
-  ) => {
-    const oldAccountKey = oldAccountId ? Object.keys(data.accounts).find(key => {
-      const account = data.accounts[key];
-      return account.id === oldAccountId;
-    }) : null;
-
-    const newAccountKey = newAccountId ? Object.keys(data.accounts).find(key => {
-      const account = data.accounts[key];
-      return account.id === newAccountId;
-    }) : null;
-
-    setData(prev => {
-      const newAccounts = { ...prev.accounts };
-
-      // Handle old account (reverse the previous transaction effect)
-      if (oldAccountKey && oldAccountKey !== newAccountKey) {
-        if (isIncome) {
-          // For income: subtract the old amount (reverse income effect)
-          newAccounts[oldAccountKey] = {
-            ...newAccounts[oldAccountKey],
-            amount: newAccounts[oldAccountKey].amount - oldAmount,
-          };
-        } else {
-          // For expense: add back the old amount (reverse expense effect)
-          newAccounts[oldAccountKey] = {
-            ...newAccounts[oldAccountKey],
-            amount: newAccounts[oldAccountKey].amount + oldAmount,
-          };
-        }
-      }
-
-      // Handle new account (apply the new transaction effect)
-      if (newAccountKey) {
-        if (oldAccountKey === newAccountKey) {
-          // Same account, just adjust the difference
-          const amountDifference = newAmount - oldAmount;
-          if (isIncome) {
-            newAccounts[newAccountKey] = {
-              ...newAccounts[newAccountKey],
-              amount: newAccounts[newAccountKey].amount + amountDifference,
-            };
-          } else {
-            newAccounts[newAccountKey] = {
-              ...newAccounts[newAccountKey],
-              amount: newAccounts[newAccountKey].amount - amountDifference,
-            };
-          }
-        } else {
-          // Different account, apply the full new amount
-          if (isIncome) {
-            newAccounts[newAccountKey] = {
-              ...newAccounts[newAccountKey],
-              amount: newAccounts[newAccountKey].amount + newAmount,
-            };
-          } else {
-            newAccounts[newAccountKey] = {
-              ...newAccounts[newAccountKey],
-              amount: newAccounts[newAccountKey].amount - newAmount,
-            };
-          }
-        }
-      }
-
-      return {
-        ...prev,
-        accounts: newAccounts,
-      };
-    });
-  }, [data.accounts]);
 
   // Helper function for optimistic updates with rollback
   const optimisticUpdate = useCallback(async <T>(
@@ -511,36 +435,6 @@ export const useBookkeeping = () => {
     }));
   };
 
-  const updateAccountBalance = async (accountKey: string, newAmount: number) => {
-    // Update local state
-    setData(prev => ({
-      ...prev,
-      accounts: {
-        ...prev.accounts,
-        [accountKey]: {
-          ...prev.accounts[accountKey],
-          amount: newAmount,
-        },
-      },
-    }));
-
-    // Update backend
-    try {
-      const account = data.accounts[accountKey];
-      const accountList = await AccountsAPI.list();
-      const backendAccount = accountList.items.find(a => a.name === account.name);
-      
-      if (backendAccount) {
-        await AccountsAPI.update(backendAccount.id, {
-          name: account.name,
-          type: account.type,
-          amount: newAmount,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to update account balance in backend:', error);
-    }
-  };
 
   const addIncomeItem = async (name: string, amount: number, categoryId: string, date: string, accountId: string) => {
     return optimisticUpdate(
@@ -562,26 +456,6 @@ export const useBookkeeping = () => {
           income: [...prev.income, newItem],
         }));
 
-        // Optimistic account balance update
-        if (accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === accountId;
-          });
-          
-          if (accountKey) {
-            setData(prev => ({
-              ...prev,
-              accounts: {
-                ...prev.accounts,
-                [accountKey]: {
-                  ...prev.accounts[accountKey],
-                  amount: prev.accounts[accountKey].amount + amount,
-                },
-              },
-            }));
-          }
-        }
       },
       async () => {
         // API call
@@ -597,7 +471,7 @@ export const useBookkeeping = () => {
         return res;
       },
       async (result) => {
-        // Success callback - update with real ID and sync account balance
+        // Success callback - update with real ID
         setData(prev => ({
           ...prev,
           income: prev.income.map(item => 
@@ -605,17 +479,8 @@ export const useBookkeeping = () => {
           ),
         }));
 
-        // Update account balance in backend
-        if (accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === accountId;
-          });
-          
-          if (accountKey) {
-            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
-          }
-        }
+        // Reload data to sync with backend account balances
+        await loadData();
 
         // Send notification
         try {
@@ -630,9 +495,6 @@ export const useBookkeeping = () => {
   };
 
   const updateIncomeItem = async (id: string, name: string, amount: number, categoryId: string, date: string, accountId: string) => {
-    const existingItem = data.income.find(item => item.id === id);
-    if (!existingItem) return;
-
     return optimisticUpdate(
       'updateIncome',
       () => {
@@ -643,15 +505,6 @@ export const useBookkeeping = () => {
             item.id === id ? { ...item, name, amount, categoryId, date, accountId } : item
           ),
         }));
-
-        // Handle account balance changes
-        handleAccountTransfer(
-          existingItem.accountId,
-          existingItem.amount,
-          accountId,
-          amount,
-          true // isIncome
-        );
       },
       async () => {
         // API call
@@ -667,34 +520,14 @@ export const useBookkeeping = () => {
         return { id };
       },
       async () => {
-        // Success callback - sync account balances in backend
-        const oldAccountId = existingItem.accountId;
-        const oldAccountKey = oldAccountId ? Object.keys(data.accounts).find(key => {
-          const account = data.accounts[key];
-          return account.id === oldAccountId;
-        }) : null;
-
-        const newAccountKey = accountId ? Object.keys(data.accounts).find(key => {
-          const account = data.accounts[key];
-          return account.id === accountId;
-        }) : null;
-
-        // Update both accounts in backend if they changed
-        if (oldAccountKey && oldAccountKey !== newAccountKey) {
-          await updateAccountBalance(oldAccountKey, data.accounts[oldAccountKey].amount);
-        }
-        if (newAccountKey) {
-          await updateAccountBalance(newAccountKey, data.accounts[newAccountKey].amount);
-        }
+        // Success callback - reload data to sync with backend account balances
+        await loadData();
       },
       'Failed to update income item'
     );
   };
 
   const deleteIncomeItem = async (id: string) => {
-    const itemToDelete = data.income.find(item => item.id === id);
-    if (!itemToDelete) return;
-
     return optimisticUpdate(
       'deleteIncome',
       () => {
@@ -703,27 +536,6 @@ export const useBookkeeping = () => {
           ...prev,
           income: prev.income.filter(item => item.id !== id),
         }));
-
-        // Optimistic account balance update (reverse the income effect)
-        if (itemToDelete.accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === itemToDelete.accountId;
-          });
-          
-          if (accountKey) {
-            setData(prev => ({
-              ...prev,
-              accounts: {
-                ...prev.accounts,
-                [accountKey]: {
-                  ...prev.accounts[accountKey],
-                  amount: prev.accounts[accountKey].amount - itemToDelete.amount,
-                },
-              },
-            }));
-          }
-        }
       },
       async () => {
         // API call
@@ -731,17 +543,8 @@ export const useBookkeeping = () => {
         return { id };
       },
       async () => {
-        // Success callback - sync account balance in backend
-        if (itemToDelete.accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === itemToDelete.accountId;
-          });
-          
-          if (accountKey) {
-            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
-          }
-        }
+        // Success callback - reload data to sync with backend account balances
+        await loadData();
       },
       'Failed to delete income item'
     );
@@ -767,26 +570,6 @@ export const useBookkeeping = () => {
           expense: [...prev.expense, newItem],
         }));
 
-        // Optimistic account balance update (decrease balance)
-        if (accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === accountId;
-          });
-          
-          if (accountKey) {
-            setData(prev => ({
-              ...prev,
-              accounts: {
-                ...prev.accounts,
-                [accountKey]: {
-                  ...prev.accounts[accountKey],
-                  amount: prev.accounts[accountKey].amount - amount,
-                },
-              },
-            }));
-          }
-        }
       },
       async () => {
         // API call
@@ -802,7 +585,7 @@ export const useBookkeeping = () => {
         return res;
       },
       async (result) => {
-        // Success callback - update with real ID and sync account balance
+        // Success callback - update with real ID
         setData(prev => ({
           ...prev,
           expense: prev.expense.map(item => 
@@ -810,17 +593,8 @@ export const useBookkeeping = () => {
           ),
         }));
 
-        // Update account balance in backend
-        if (accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === accountId;
-          });
-          
-          if (accountKey) {
-            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
-          }
-        }
+        // Reload data to sync with backend account balances
+        await loadData();
 
         // Send notification
         try {
@@ -835,9 +609,6 @@ export const useBookkeeping = () => {
   };
 
   const updateExpenseItem = async (id: string, name: string, amount: number, categoryId: string, date: string, accountId: string) => {
-    const existingItem = data.expense.find(item => item.id === id);
-    if (!existingItem) return;
-
     return optimisticUpdate(
       'updateExpense',
       () => {
@@ -848,15 +619,6 @@ export const useBookkeeping = () => {
             item.id === id ? { ...item, name, amount, categoryId, date, accountId } : item
           ),
         }));
-
-        // Handle account balance changes
-        handleAccountTransfer(
-          existingItem.accountId,
-          existingItem.amount,
-          accountId,
-          amount,
-          false // isIncome (false for expense)
-        );
       },
       async () => {
         // API call
@@ -872,34 +634,14 @@ export const useBookkeeping = () => {
         return { id };
       },
       async () => {
-        // Success callback - sync account balances in backend
-        const oldAccountId = existingItem.accountId;
-        const oldAccountKey = oldAccountId ? Object.keys(data.accounts).find(key => {
-          const account = data.accounts[key];
-          return account.id === oldAccountId;
-        }) : null;
-
-        const newAccountKey = accountId ? Object.keys(data.accounts).find(key => {
-          const account = data.accounts[key];
-          return account.id === accountId;
-        }) : null;
-
-        // Update both accounts in backend if they changed
-        if (oldAccountKey && oldAccountKey !== newAccountKey) {
-          await updateAccountBalance(oldAccountKey, data.accounts[oldAccountKey].amount);
-        }
-        if (newAccountKey) {
-          await updateAccountBalance(newAccountKey, data.accounts[newAccountKey].amount);
-        }
+        // Success callback - reload data to sync with backend account balances
+        await loadData();
       },
       'Failed to update expense item'
     );
   };
 
   const deleteExpenseItem = async (id: string) => {
-    const itemToDelete = data.expense.find(item => item.id === id);
-    if (!itemToDelete) return;
-
     return optimisticUpdate(
       'deleteExpense',
       () => {
@@ -908,27 +650,6 @@ export const useBookkeeping = () => {
           ...prev,
           expense: prev.expense.filter(item => item.id !== id),
         }));
-
-        // Optimistic account balance update (reverse the expense effect)
-        if (itemToDelete.accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === itemToDelete.accountId;
-          });
-          
-          if (accountKey) {
-            setData(prev => ({
-              ...prev,
-              accounts: {
-                ...prev.accounts,
-                [accountKey]: {
-                  ...prev.accounts[accountKey],
-                  amount: prev.accounts[accountKey].amount + itemToDelete.amount,
-                },
-              },
-            }));
-          }
-        }
       },
       async () => {
         // API call
@@ -936,17 +657,8 @@ export const useBookkeeping = () => {
         return { id };
       },
       async () => {
-        // Success callback - sync account balance in backend
-        if (itemToDelete.accountId) {
-          const accountKey = Object.keys(data.accounts).find(key => {
-            const account = data.accounts[key];
-            return account.id === itemToDelete.accountId;
-          });
-          
-          if (accountKey) {
-            await updateAccountBalance(accountKey, data.accounts[accountKey].amount);
-          }
-        }
+        // Success callback - reload data to sync with backend account balances
+        await loadData();
       },
       'Failed to delete expense item'
     );

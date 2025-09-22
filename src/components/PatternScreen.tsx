@@ -13,8 +13,7 @@ export const PatternScreen = ({ onPatternCorrect }: PatternScreenProps) => {
   const [isFingerprint, setIsFingerprint] = useState(false);
   const correctPattern = [1, 2, 3, 5, 8, 9]; // Z pattern: 1-2-3-5-8-9
 
-  // Check if WebAuthn is supported and if we're on mobile
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Check if WebAuthn is supported
   const isWebAuthnSupported = typeof window !== 'undefined' && 
     'navigator' in window && 
     'credentials' in navigator && 
@@ -179,8 +178,8 @@ export const PatternScreen = ({ onPatternCorrect }: PatternScreenProps) => {
             Draw the Z pattern to unlock
           </div>
 
-          {/* Fingerprint Authentication for Mobile */}
-          {isMobile && isWebAuthnSupported && (
+          {/* Fingerprint Authentication */}
+          {isWebAuthnSupported && (
             <div className="flex justify-center pt-3 sm:pt-4 border-t">
               <Button
                 variant="ghost"

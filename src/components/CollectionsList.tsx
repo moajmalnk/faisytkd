@@ -4,24 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Edit2, Trash2, Plus, Check } from 'lucide-react';
-import { CollectItem } from '@/hooks/useBookkeeping';
+import { CollectItem, Account } from '@/hooks/useBookkeeping';
 
 interface CollectionsListProps {
   items: CollectItem[];
   total: number;
+  accounts: Account[];
   onAdd: (name: string, amount: number) => void;
   onUpdate: (id: string, name: string, amount: number) => void;
   onDelete: (id: string) => void;
-  onMarkCompleted: (id: string) => void;
+  onMarkCompleted: (id: string, accountId: string) => void;
   isPrivate?: boolean;
 }
 
-export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete, onMarkCompleted, isPrivate = false }: CollectionsListProps) => {
+export const CollectionsList = ({ items, total, accounts, onAdd, onUpdate, onDelete, onMarkCompleted, isPrivate = false }: CollectionsListProps) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<CollectItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<CollectItem | null>(null);
   const [formData, setFormData] = useState({ name: '', amount: '' });
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +131,7 @@ export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete, onMar
                       size="sm"
                       className="h-8 w-8 sm:h-9 sm:w-9 p-0 border-success/20 hover:bg-success/10 hover:border-success/30"
                       title="Mark as Completed"
+                      onClick={() => setSelectedAccountId('')}
                     >
                       <Check className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
                     </Button>
@@ -136,13 +140,44 @@ export const CollectionsList = ({ items, total, onAdd, onUpdate, onDelete, onMar
                     <AlertDialogHeader>
                       <AlertDialogTitle>Mark as Completed</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to mark "{item.name}" ({formatCurrency(item.amount)}) as completed? This will remove it from the pending collections list.
+                        Select the account where you want to add the collection amount of {formatCurrency(item.amount)} for "{item.name}".
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+                    <div className="space-y-3 py-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Select Account</label>
+                        <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Choose account" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accounts.map((account) => (
+                              <SelectItem key={account.id} value={account.id}>
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${
+                                      account.type === 'cash' ? 'bg-green-500' :
+                                      account.type === 'bank' ? 'bg-blue-500' :
+                                      'bg-orange-500'
+                                    }`} />
+                                    <span>{account.name} ₹{account.amount.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction 
-                        onClick={() => onMarkCompleted(item.id)}
+                        onClick={() => {
+                          if (selectedAccountId) {
+                            onMarkCompleted(item.id, selectedAccountId);
+                          }
+                        }}
+                        disabled={!selectedAccountId}
                         className="bg-success text-success-foreground hover:bg-success/90"
                       >
                         Mark as Completed

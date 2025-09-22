@@ -222,6 +222,12 @@ const Index = () => {
           <CollectionsList
             items={data.collect}
             total={totals.collect}
+            accounts={Object.entries(data.accounts).map(([key, account]) => ({
+              id: account.id,
+              name: account.name,
+              type: account.type,
+              amount: account.amount,
+            }))}
             onAdd={addCollectItem}
             onUpdate={updateCollectItem}
             onDelete={deleteCollectItem}
@@ -232,6 +238,12 @@ const Index = () => {
           <PaymentsList
             items={data.pay}
             total={totals.pay}
+            accounts={Object.entries(data.accounts).map(([key, account]) => ({
+              id: account.id,
+              name: account.name,
+              type: account.type,
+              amount: account.amount,
+            }))}
             onAdd={addPayItem}
             onUpdate={updatePayItem}
             onDelete={deletePayItem}

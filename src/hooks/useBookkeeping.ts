@@ -9,6 +9,7 @@ export interface CollectItem {
   name: string;
   amount: number;
   completed: boolean;
+  accountId?: string;
 }
 
 export interface PayItem {
@@ -16,6 +17,7 @@ export interface PayItem {
   name: string;
   amount: number;
   completed: boolean;
+  accountId?: string;
 }
 
 export interface Category {
@@ -374,52 +376,96 @@ export const useBookkeeping = () => {
     }
   };
 
-  const markCollectItemAsCompleted = async (id: string) => {
-    try {
-      const item = data.collect.find(i => i.id === id);
-      if (item) {
-        await TransactionsAPI.update(Number(id), {
-          kind: 'collect',
-          amount: item.amount,
-          note: item.name,
-          occurred_on: new Date().toISOString().split('T')[0],
-          completed: true,
-        });
-      }
-      
-      setData(prev => ({
-        ...prev,
-        collect: prev.collect.map(item =>
-          item.id === id ? { ...item, completed: true } : item
-        ),
-      }));
-    } catch (e) {
-      console.error('markCollectItemAsCompleted failed', e);
-    }
+  const markCollectItemAsCompleted = async (id: string, accountId: string) => {
+    return optimisticUpdate(
+      'markCollectCompleted',
+      () => {
+        // Mark as completed immediately
+        setData(prev => ({
+          ...prev,
+          collect: prev.collect.map(item =>
+            item.id === id ? { ...item, completed: true, accountId } : item
+          ),
+        }));
+      },
+      async () => {
+        // API call
+        const item = data.collect.find(i => i.id === id);
+        if (item) {
+          await TransactionsAPI.update(Number(id), {
+            kind: 'income', // Change from 'collect' to 'income' when completed
+            amount: item.amount,
+            note: item.name,
+            account_id: accountId ? Number(accountId) : null,
+            occurred_on: new Date().toISOString().split('T')[0],
+            completed: true,
+          });
+        }
+        
+        return { id };
+      },
+      async () => {
+        // Success callback - reload data to sync with backend account balances
+        await loadData();
+
+        // Send notification
+        try {
+          const item = data.collect.find(i => i.id === id);
+          if (item) {
+            await bookkeepingNotifications.notifyTransactionAdded('income', item.amount, 'Collection Completed');
+          }
+        } catch (notificationError) {
+          console.warn('Failed to send collection completion notification:', notificationError);
+        }
+      },
+      'Failed to mark collection as completed'
+    );
   };
 
-  const markPayItemAsCompleted = async (id: string) => {
-    try {
-      const item = data.pay.find(i => i.id === id);
-      if (item) {
-        await TransactionsAPI.update(Number(id), {
-          kind: 'pay',
-          amount: item.amount,
-          note: item.name,
-          occurred_on: new Date().toISOString().split('T')[0],
-          completed: true,
-        });
-      }
-      
-      setData(prev => ({
-        ...prev,
-        pay: prev.pay.map(item =>
-          item.id === id ? { ...item, completed: true } : item
-        ),
-      }));
-    } catch (e) {
-      console.error('markPayItemAsCompleted failed', e);
-    }
+  const markPayItemAsCompleted = async (id: string, accountId: string) => {
+    return optimisticUpdate(
+      'markPayCompleted',
+      () => {
+        // Mark as completed immediately
+        setData(prev => ({
+          ...prev,
+          pay: prev.pay.map(item =>
+            item.id === id ? { ...item, completed: true, accountId } : item
+          ),
+        }));
+      },
+      async () => {
+        // API call
+        const item = data.pay.find(i => i.id === id);
+        if (item) {
+          await TransactionsAPI.update(Number(id), {
+            kind: 'expense', // Change from 'pay' to 'expense' when completed
+            amount: item.amount,
+            note: item.name,
+            account_id: accountId ? Number(accountId) : null,
+            occurred_on: new Date().toISOString().split('T')[0],
+            completed: true,
+          });
+        }
+        
+        return { id };
+      },
+      async () => {
+        // Success callback - reload data to sync with backend account balances
+        await loadData();
+
+        // Send notification
+        try {
+          const item = data.pay.find(i => i.id === id);
+          if (item) {
+            await bookkeepingNotifications.notifyTransactionAdded('expense', item.amount, 'Payment Completed');
+          }
+        } catch (notificationError) {
+          console.warn('Failed to send payment completion notification:', notificationError);
+        }
+      },
+      'Failed to mark payment as completed'
+    );
   };
 
   const updateAccount = async (account: keyof Accounts, amount: number) => {

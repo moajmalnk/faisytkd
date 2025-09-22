@@ -38,10 +38,10 @@ export function PWAInstallPrompt() {
       e.preventDefault(); // Prevent the default browser install prompt
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Show our custom prompt after a delay to not be too aggressive
+      // Show our custom prompt immediately for better UX
       setTimeout(() => {
         setShowPrompt(true);
-      }, 3000);
+      }, 1000);
     };
 
     // Listen for app installed event
@@ -62,7 +62,10 @@ export function PWAInstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      toast.error('Install prompt not available. Please try again later.');
+      return;
+    }
 
     try {
       await deferredPrompt.prompt();
@@ -79,6 +82,8 @@ export function PWAInstallPrompt() {
     } catch (error) {
       console.error('Error during installation:', error);
       toast.error('Installation failed. Please try again.');
+      setDeferredPrompt(null);
+      setShowPrompt(false);
     }
   };
 

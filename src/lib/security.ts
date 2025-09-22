@@ -4,23 +4,20 @@
 
 import { getSecurityConfig, shouldEnableSecurity } from './security-config';
 
-// Disable console in production
+// Disable console in production (but keep essential methods)
 const disableConsole = () => {
   if (import.meta.env.PROD) {
-    // Override console methods
+    // Override only non-essential console methods
     const noop = () => {};
-    const methods = ['log', 'debug', 'info', 'warn', 'error', 'trace', 'group', 'groupEnd', 'time', 'timeEnd', 'profile', 'profileEnd'];
+    const methods = ['log', 'debug', 'info', 'trace', 'group', 'groupEnd', 'time', 'timeEnd', 'profile', 'profileEnd'];
     
     methods.forEach(method => {
       (console as any)[method] = noop;
     });
     
-    // Disable console object
-    Object.defineProperty(window, 'console', {
-      value: {},
-      writable: false,
-      configurable: false
-    });
+    // Keep warn and error methods but make them silent
+    (console as any).warn = noop;
+    (console as any).error = noop;
   }
 };
 

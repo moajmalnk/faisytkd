@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -189,11 +190,9 @@ export const IncomeList = ({ items, total, categories, accounts, onAdd, onUpdate
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Date</label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={formData.date || getTodayDate()}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="h-11"
+                  onChange={(val) => setFormData({ ...formData, date: val })}
                 />
               </div>
               <div className="space-y-2">
@@ -357,11 +356,9 @@ export const IncomeList = ({ items, total, categories, accounts, onAdd, onUpdate
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Date</label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="h-11"
+                  onChange={(val) => setFormData({ ...formData, date: val })}
                 />
               </div>
               <div className="space-y-2">

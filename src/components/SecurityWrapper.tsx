@@ -13,16 +13,14 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
     // Initialize security measures
     initializeSecurity();
     
-    // Check for suspicious browser environments
+    // Check for suspicious browser environments (only basic checks)
     const checkEnvironment = () => {
-      // Check for automation tools
+      // Only check for obvious automation tools, not debugging
       const automationSigns = [
         'webdriver' in window,
         'selenium' in window,
         'phantom' in window,
-        'nightmare' in window,
-        'cypress' in window,
-        'playwright' in window
+        'nightmare' in window
       ];
       
       if (automationSigns.some(sign => sign)) {
@@ -30,26 +28,13 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
         return false;
       }
       
-      // Check for headless browser
-      if (navigator.webdriver || 
-          (navigator as any).webdriver === undefined && 
-          window.outerHeight === 0 && 
-          window.outerWidth === 0) {
+      // Check for obvious headless browser
+      if (navigator.webdriver && window.outerHeight === 0 && window.outerWidth === 0) {
         setWarningMessage('Headless browser detected. Access denied.');
         return false;
       }
       
-      // Check for debugging tools (only in production)
-      if (import.meta.env.PROD) {
-        const start = Date.now();
-        debugger;
-        const end = Date.now();
-        if (end - start > 100) {
-          setWarningMessage('Debugging tools detected. Access denied.');
-          return false;
-        }
-      }
-      
+      // Skip debugging tool detection to avoid false positives
       return true;
     };
     
@@ -80,26 +65,7 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
         configurable: false
       });
       
-      // Monitor for DevTools (only in production)
-      if (import.meta.env.PROD) {
-        let devtools = false;
-        const checkDevTools = () => {
-          const widthThreshold = window.outerWidth - window.innerWidth > 160;
-          const heightThreshold = window.outerHeight - window.innerHeight > 160;
-          
-          if (widthThreshold || heightThreshold) {
-            if (!devtools) {
-              devtools = true;
-              setWarningMessage('Developer tools detected. Access denied.');
-              window.location.href = 'about:blank';
-            }
-          } else {
-            devtools = false;
-          }
-        };
-        
-        setInterval(checkDevTools, 1000);
-      }
+      // Skip aggressive DevTools monitoring to avoid false positives
     };
     
     addProtectionLayers();

@@ -2,6 +2,8 @@
  * Security utilities to protect the application from various attacks
  */
 
+import { getSecurityConfig, shouldEnableSecurity } from './security-config';
+
 // Disable console in production
 const disableConsole = () => {
   if (import.meta.env.PROD) {
@@ -22,19 +24,16 @@ const disableConsole = () => {
   }
 };
 
-// Prevent right-click context menu (only in production)
+// Prevent right-click context menu
 const disableRightClick = () => {
-  if (!import.meta.env.PROD) return; // Skip in development
-  
   document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     return false;
   });
 };
 
-// Disable common developer shortcuts (only in production)
+// Disable common developer shortcuts
 const disableDevTools = () => {
-  if (!import.meta.env.PROD) return; // Skip in development
   
   // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
   document.addEventListener('keydown', (e) => {
@@ -76,9 +75,8 @@ const disableDevTools = () => {
   });
 };
 
-// Detect and prevent DevTools opening (only in production)
+// Detect and prevent DevTools opening
 const detectDevTools = () => {
-  if (!import.meta.env.PROD) return; // Skip in development
   
   let devtools = {
     open: false,
@@ -101,9 +99,8 @@ const detectDevTools = () => {
   }, 500);
 };
 
-// Prevent text selection (only in production)
+// Prevent text selection
 const disableTextSelection = () => {
-  if (!import.meta.env.PROD) return; // Skip in development
   
   document.addEventListener('selectstart', (e) => {
     e.preventDefault();
@@ -188,18 +185,23 @@ const detectSuspiciousActivity = () => {
 
 // Initialize all security measures
 export const initializeSecurity = () => {
-  if (import.meta.env.PROD) {
-    disableConsole();
-    disableRightClick();
-    disableDevTools();
-    detectDevTools();
-    disableTextSelection();
-    preventIframeEmbedding();
-    detectSuspiciousActivity();
+  if (shouldEnableSecurity()) {
+    const config = getSecurityConfig();
     
-    // Clear sensitive data on page unload
-    window.addEventListener('beforeunload', clearSensitiveData);
-    window.addEventListener('unload', clearSensitiveData);
+    // Always enable these basic security measures
+    if (config.disableConsole) disableConsole();
+    if (config.preventIframeEmbedding) preventIframeEmbedding();
+    if (config.detectSuspiciousActivity) detectSuspiciousActivity();
+    if (config.clearSensitiveData) {
+      window.addEventListener('beforeunload', clearSensitiveData);
+      window.addEventListener('unload', clearSensitiveData);
+    }
+    
+    // Enable optional measures based on configuration
+    if (config.disableRightClick) disableRightClick();
+    if (config.disableDevTools) disableDevTools();
+    if (config.detectDevTools) detectDevTools();
+    if (config.disableTextSelection) disableTextSelection();
   }
 };
 

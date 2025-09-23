@@ -204,7 +204,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-2 sm:p-4 lg:p-6">
+          <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Net Balance</CardTitle>
               <DollarSign className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'}`} />

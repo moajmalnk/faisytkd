@@ -133,7 +133,7 @@ export const ExpenseList = ({ items, total, categories, accounts, onAdd, onUpdat
 
   return (
     <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
+      <CardHeader className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-danger/10">
             <Plus className="h-5 w-5 text-danger" />
@@ -143,9 +143,9 @@ export const ExpenseList = ({ items, total, categories, accounts, onAdd, onUpdat
             <p className={`text-sm text-muted-foreground ${isPrivate ? 'privacy-blur' : ''}`}>Track your spending</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-            <SelectTrigger className="w-32 h-9">
+            <SelectTrigger className="w-full sm:w-32 h-9">
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
             <SelectContent>
@@ -159,7 +159,7 @@ export const ExpenseList = ({ items, total, categories, accounts, onAdd, onUpdat
             </SelectContent>
           </Select>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-danger hover:bg-danger/90 text-danger-foreground shadow-md">
+          <DialogTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-danger hover:bg-danger/90 text-danger-foreground shadow-md w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
           </DialogTrigger>

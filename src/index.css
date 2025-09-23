@@ -148,4 +148,12 @@ All colors MUST be HSL.
     filter: blur(4px);
     transition: filter 0.2s ease-in-out;
   }
+
+  /* Automatic privacy for sensitive widgets when app is not in focus */
+  .sensitive-blur-active .sensitive-area {
+    filter: blur(10px) brightness(0.8);
+    transition: filter 150ms ease-in-out;
+    pointer-events: none;
+    user-select: none;
+  }
 }

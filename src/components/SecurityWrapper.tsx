@@ -8,6 +8,7 @@ interface SecurityWrapperProps {
 export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) => {
   const [isSecure, setIsSecure] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
+  const [isBackground, setIsBackground] = useState(false);
 
   useEffect(() => {
     // Initialize security measures
@@ -70,6 +71,22 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
     
     addProtectionLayers();
     
+    // Blur sensitive areas when app loses focus or page is hidden
+    const handleVisibility = () => {
+      const hidden = document.hidden || document.visibilityState !== 'visible';
+      setIsBackground(hidden);
+      document.documentElement.classList.toggle('sensitive-blur-active', hidden);
+    };
+
+    const handleFocus = () => {
+      setIsBackground(false);
+      document.documentElement.classList.remove('sensitive-blur-active');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
     // Clear sensitive data periodically
     const clearDataInterval = setInterval(() => {
       // Clear any sensitive data that might be in memory
@@ -83,6 +100,9 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
     
     return () => {
       clearInterval(clearDataInterval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 

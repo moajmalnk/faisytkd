@@ -787,6 +787,10 @@ export const useBookkeeping = () => {
     profit: totals.income - totals.expense,
     expenseRatio: totals.income > 0 ? (totals.expense / totals.income) * 100 : 0,
     profitMargin: totals.income > 0 ? ((totals.income - totals.expense) / totals.income) * 100 : 0,
+    // Positive number representing loss, 0 when not in loss
+    loss: Math.max(0, totals.expense - totals.income),
+    // Cash position after pending obligations (to collect / to pay)
+    netCashAfterObligations: totals.accounts + totals.collect - totals.pay,
   };
 
   const addAccount = async (name: string, type: 'cash' | 'bank' | 'credit', amount: number) => {

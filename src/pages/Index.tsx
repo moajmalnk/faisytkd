@@ -18,7 +18,7 @@ import { PinScreen } from '@/components/PinScreen';
 import { PatternScreen } from '@/components/PatternScreen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calculator, TrendingUp, TrendingDown, Wallet, IndianRupee, Target, Percent, LogOut } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, Wallet, IndianRupee, Target, Percent, LogOut, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 const Index = () => {
@@ -95,7 +95,7 @@ const Index = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div className="text-center sm:text-left">
-            <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-primary mb-1 sm:mb-2 ${isPrivate ? 'privacy-blur' : ''}`}>NKBook Dashboard</h1>
+            <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-primary mb-1 sm:mb-2 ${isPrivate ? 'privacy-blur' : ''}`}>NKBook</h1>
             <p className={`text-muted-foreground text-xs sm:text-sm lg:text-base ${isPrivate ? 'privacy-blur' : ''}`}>Manage your collections, payments, and accounts</p>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -114,7 +114,7 @@ const Index = () => {
         </div>
 
         {/* Financial Analytics Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="p-3 sm:p-6">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Profit</CardTitle>
@@ -144,6 +144,19 @@ const Index = () => {
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-lg sm:text-xl lg:text-2xl font-bold text-danger ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(totals.expense)}</div>
+            </CardContent>
+          </Card>
+
+          {/* Loss (shown when expenses exceed income) */}
+          <Card className="p-3 sm:p-6">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
+              <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Loss</CardTitle>
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning" />
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${analytics.loss > 0 ? 'text-warning' : 'text-muted-foreground'} ${isPrivate ? 'privacy-blur' : ''}`}>
+                {formatCurrency(analytics.loss)}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -207,11 +220,11 @@ const Index = () => {
           <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Net Balance</CardTitle>
-              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'}`} />
+              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${(analytics.netCashAfterObligations) >= 0 ? 'text-success' : 'text-danger'}`} />
             </CardHeader>
             <CardContent className="px-0 pb-0">
-              <div className={`text-sm sm:text-lg lg:text-xl font-bold ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'} ${isPrivate ? 'privacy-blur' : ''}`}>
-                {formatCurrency(totals.accounts + totals.collect - totals.pay)}
+              <div className={`text-sm sm:text-lg lg:text-xl font-bold ${(analytics.netCashAfterObligations) >= 0 ? 'text-success' : 'text-danger'} ${isPrivate ? 'privacy-blur' : ''}`}>
+                {formatCurrency(analytics.netCashAfterObligations)}
               </div>
             </CardContent>
           </Card>

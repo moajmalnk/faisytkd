@@ -99,7 +99,7 @@ export const AccountsOverview = ({ accounts, total, onUpdate, onAdd, onDelete, i
 
   return (
     <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
+      <CardHeader className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Wallet className="h-5 w-5 text-primary" />
@@ -111,7 +111,7 @@ export const AccountsOverview = ({ accounts, total, onUpdate, onAdd, onDelete, i
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Account
             </Button>

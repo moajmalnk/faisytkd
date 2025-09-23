@@ -18,7 +18,7 @@ import { PinScreen } from '@/components/PinScreen';
 import { PatternScreen } from '@/components/PatternScreen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calculator, TrendingUp, TrendingDown, Wallet, DollarSign, Target, Percent, LogOut } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, Wallet, IndianRupee, Target, Percent, LogOut } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 const Index = () => {
@@ -118,7 +118,7 @@ const Index = () => {
           <Card className="p-3 sm:p-6">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Profit</CardTitle>
-              <DollarSign className={`h-3 w-3 sm:h-4 sm:w-4 ${analytics.profit >= 0 ? 'text-success' : 'text-danger'}`} />
+              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 ${analytics.profit >= 0 ? 'text-success' : 'text-danger'}`} />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${analytics.profit >= 0 ? 'text-success' : 'text-danger'} ${isPrivate ? 'privacy-blur' : ''}`}>
@@ -207,7 +207,7 @@ const Index = () => {
           <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Net Balance</CardTitle>
-              <DollarSign className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'}`} />
+              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'}`} />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold ${(totals.accounts + totals.collect - totals.pay) >= 0 ? 'text-success' : 'text-danger'} ${isPrivate ? 'privacy-blur' : ''}`}>

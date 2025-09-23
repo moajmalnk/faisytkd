@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, BellOff, Clock, DollarSign, Target, AlertTriangle } from 'lucide-react';
+import { Bell, BellOff, Clock, IndianRupee, Target, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { notificationService, bookkeepingNotifications } from '@/lib/notifications';
 
@@ -233,7 +233,7 @@ export function NotificationSettings() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-primary" />
+                        <IndianRupee className="h-4 w-4 text-primary" />
                         <Label className="text-base">Large Expense Alerts</Label>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -248,7 +248,7 @@ export function NotificationSettings() {
 
                   {settings.expenseAlerts && (
                     <div className="ml-6 space-y-2">
-                      <Label htmlFor="expense-threshold">Alert threshold ($)</Label>
+                      <Label htmlFor="expense-threshold">Alert threshold (₹)</Label>
                       <Input
                         id="expense-threshold"
                         type="number"

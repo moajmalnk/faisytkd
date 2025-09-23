@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { SecurityWrapper } from "@/components/SecurityWrapper";
 import { useEffect } from "react";
+import { FluidFadeIn } from "@/components/FluidAnimation";
 
 const queryClient = new QueryClient();
 
@@ -37,11 +38,13 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <FluidFadeIn>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </FluidFadeIn>
             </BrowserRouter>
             <PWAInstallPrompt />
           </TooltipProvider>

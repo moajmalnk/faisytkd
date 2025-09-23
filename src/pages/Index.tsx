@@ -90,12 +90,12 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4 lg:p-6">
+    <div className="min-h-screen bg-background p-2 sm:p-4 lg:p-6 fluid-fade-in">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4 fluid-slide-in">
           <div className="text-center sm:text-left">
-            <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-primary mb-1 sm:mb-2 ${isPrivate ? 'privacy-blur' : ''}`}>NKBook</h1>
+            <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-primary mb-1 sm:mb-2 fluid-float ${isPrivate ? 'privacy-blur' : ''}`}>NKBook</h1>
             <p className={`text-muted-foreground text-xs sm:text-sm lg:text-base ${isPrivate ? 'privacy-blur' : ''}`}>Manage your collections, payments, and accounts</p>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -105,7 +105,7 @@ const Index = () => {
               variant="outline"
               size="icon"
               onClick={logout}
-              className="hover:bg-danger hover:text-danger-foreground h-8 w-8 sm:h-10 sm:w-10"
+              className="fluid-hover-button hover:bg-danger hover:text-danger-foreground h-8 w-8 sm:h-10 sm:w-10"
               title="Logout"
             >
               <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -115,10 +115,10 @@ const Index = () => {
 
         {/* Financial Analytics Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Card className="p-3 sm:p-6">
+          <Card className="p-3 sm:p-6 fluid-grid-item fluid-hover-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Profit</CardTitle>
-              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 ${analytics.profit >= 0 ? 'text-success' : 'text-danger'}`} />
+              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 fluid-pulse ${analytics.profit >= 0 ? 'text-success' : 'text-danger'}`} />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${analytics.profit >= 0 ? 'text-success' : 'text-danger'} ${isPrivate ? 'privacy-blur' : ''}`}>
@@ -127,20 +127,20 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-3 sm:p-6">
+          <Card className="p-3 sm:p-6 fluid-grid-item fluid-hover-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Total Income</CardTitle>
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-success fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-lg sm:text-xl lg:text-2xl font-bold text-success ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(totals.income)}</div>
             </CardContent>
           </Card>
 
-          <Card className="p-3 sm:p-6 sm:col-span-2 lg:col-span-1">
+          <Card className="p-3 sm:p-6 sm:col-span-2 lg:col-span-1 fluid-grid-item fluid-hover-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Total Expense</CardTitle>
-              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-danger" />
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-danger fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-lg sm:text-xl lg:text-2xl font-bold text-danger ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(totals.expense)}</div>
@@ -148,10 +148,10 @@ const Index = () => {
           </Card>
 
           {/* Loss (shown when expenses exceed income) */}
-          <Card className="p-3 sm:p-6">
+          <Card className="p-3 sm:p-6 fluid-grid-item fluid-hover-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium ${isPrivate ? 'privacy-blur' : ''}`}>Loss</CardTitle>
-              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning" />
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${analytics.loss > 0 ? 'text-warning' : 'text-muted-foreground'} ${isPrivate ? 'privacy-blur' : ''}`}>
@@ -163,10 +163,10 @@ const Index = () => {
 
         {/* Additional Financial Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-4 mb-6 sm:mb-8">
-          <Card className="p-2 sm:p-4 lg:p-6">
+          <Card className="p-2 sm:p-4 lg:p-6 fluid-grid-item fluid-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Expense Ratio</CardTitle>
-              <Percent className="h-3 w-3 sm:h-4 sm:w-4 text-warning flex-shrink-0" />
+              <Percent className="h-3 w-3 sm:h-4 sm:w-4 text-warning flex-shrink-0 fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold text-warning ${isPrivate ? 'privacy-blur' : ''}`}>
@@ -175,10 +175,10 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-2 sm:p-4 lg:p-6">
+          <Card className="p-2 sm:p-4 lg:p-6 fluid-grid-item fluid-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Profit Margin</CardTitle>
-              <Target className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+              <Target className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0 fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold text-primary ${isPrivate ? 'privacy-blur' : ''}`}>
@@ -187,40 +187,40 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1">
+          <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1 fluid-grid-item fluid-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>To Collect</CardTitle>
-              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-info flex-shrink-0" />
+              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-info flex-shrink-0 fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold text-info ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(totals.collect)}</div>
             </CardContent>
           </Card>
 
-          <Card className="p-2 sm:p-4 lg:p-6">
+          <Card className="p-2 sm:p-4 lg:p-6 fluid-grid-item fluid-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>To Pay</CardTitle>
-              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-danger flex-shrink-0" />
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-danger flex-shrink-0 fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold text-danger ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(totals.pay)}</div>
             </CardContent>
           </Card>
 
-          <Card className="p-2 sm:p-4 lg:p-6">
+          <Card className="p-2 sm:p-4 lg:p-6 fluid-grid-item fluid-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Available Funds</CardTitle>
-              <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+              <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0 fluid-pulse" />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold text-primary ${isPrivate ? 'privacy-blur' : ''}`}>{formatCurrency(totals.accounts)}</div>
             </CardContent>
           </Card>
 
-          <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1">
+          <Card className="p-2 sm:p-4 lg:p-6 col-span-2 sm:col-span-1 fluid-grid-item fluid-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-0">
               <CardTitle className={`text-xs sm:text-sm font-medium truncate ${isPrivate ? 'privacy-blur' : ''}`}>Net Balance</CardTitle>
-              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${(analytics.netCashAfterObligations) >= 0 ? 'text-success' : 'text-danger'}`} />
+              <IndianRupee className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 fluid-pulse ${(analytics.netCashAfterObligations) >= 0 ? 'text-success' : 'text-danger'}`} />
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className={`text-sm sm:text-lg lg:text-xl font-bold ${(analytics.netCashAfterObligations) >= 0 ? 'text-success' : 'text-danger'} ${isPrivate ? 'privacy-blur' : ''}`}>
@@ -232,78 +232,86 @@ const Index = () => {
 
         {/* Collections & Payments */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
-          <CollectionsList
-            items={data.collect}
-            total={totals.collect}
-            accounts={Object.entries(data.accounts).map(([key, account]) => ({
-              id: account.id,
-              name: account.name,
-              type: account.type,
-              amount: account.amount,
-            }))}
-            onAdd={addCollectItem}
-            onUpdate={updateCollectItem}
-            onDelete={deleteCollectItem}
-            onMarkCompleted={markCollectItemAsCompleted}
-            isPrivate={isPrivate}
-          />
+          <div className="fluid-grid-item">
+            <CollectionsList
+              items={data.collect}
+              total={totals.collect}
+              accounts={Object.entries(data.accounts).map(([key, account]) => ({
+                id: account.id,
+                name: account.name,
+                type: account.type,
+                amount: account.amount,
+              }))}
+              onAdd={addCollectItem}
+              onUpdate={updateCollectItem}
+              onDelete={deleteCollectItem}
+              onMarkCompleted={markCollectItemAsCompleted}
+              isPrivate={isPrivate}
+            />
+          </div>
 
-          <PaymentsList
-            items={data.pay}
-            total={totals.pay}
-            accounts={Object.entries(data.accounts).map(([key, account]) => ({
-              id: account.id,
-              name: account.name,
-              type: account.type,
-              amount: account.amount,
-            }))}
-            onAdd={addPayItem}
-            onUpdate={updatePayItem}
-            onDelete={deletePayItem}
-            onMarkCompleted={markPayItemAsCompleted}
-            isPrivate={isPrivate}
-          />
+          <div className="fluid-grid-item">
+            <PaymentsList
+              items={data.pay}
+              total={totals.pay}
+              accounts={Object.entries(data.accounts).map(([key, account]) => ({
+                id: account.id,
+                name: account.name,
+                type: account.type,
+                amount: account.amount,
+              }))}
+              onAdd={addPayItem}
+              onUpdate={updatePayItem}
+              onDelete={deletePayItem}
+              onMarkCompleted={markPayItemAsCompleted}
+              isPrivate={isPrivate}
+            />
+          </div>
         </div>
 
         {/* Income & Expenses */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
-          <IncomeList
-            items={data.income}
-            total={totals.income}
-            categories={data.categories}
-            accounts={Object.entries(data.accounts).map(([key, account]) => ({
-              id: account.id,
-              name: account.name,
-              type: account.type,
-              amount: account.amount,
-            }))}
-            onAdd={addIncomeItem}
-            onUpdate={updateIncomeItem}
-            onDelete={deleteIncomeItem}
-            isPrivate={isPrivate}
-            isLoading={operationLoading.addIncome || operationLoading.updateIncome || operationLoading.deleteIncome}
-          />
+          <div className="fluid-grid-item">
+            <IncomeList
+              items={data.income}
+              total={totals.income}
+              categories={data.categories}
+              accounts={Object.entries(data.accounts).map(([key, account]) => ({
+                id: account.id,
+                name: account.name,
+                type: account.type,
+                amount: account.amount,
+              }))}
+              onAdd={addIncomeItem}
+              onUpdate={updateIncomeItem}
+              onDelete={deleteIncomeItem}
+              isPrivate={isPrivate}
+              isLoading={operationLoading.addIncome || operationLoading.updateIncome || operationLoading.deleteIncome}
+            />
+          </div>
 
-          <ExpenseList
-            items={data.expense}
-            total={totals.expense}
-            categories={data.categories}
-            accounts={Object.entries(data.accounts).map(([key, account]) => ({
-              id: account.id,
-              name: account.name,
-              type: account.type,
-              amount: account.amount,
-            }))}
-            onAdd={addExpenseItem}
-            onUpdate={updateExpenseItem}
-            onDelete={deleteExpenseItem}
-            isPrivate={isPrivate}
-            isLoading={operationLoading.addExpense || operationLoading.updateExpense || operationLoading.deleteExpense}
-          />
+          <div className="fluid-grid-item">
+            <ExpenseList
+              items={data.expense}
+              total={totals.expense}
+              categories={data.categories}
+              accounts={Object.entries(data.accounts).map(([key, account]) => ({
+                id: account.id,
+                name: account.name,
+                type: account.type,
+                amount: account.amount,
+              }))}
+              onAdd={addExpenseItem}
+              onUpdate={updateExpenseItem}
+              onDelete={deleteExpenseItem}
+              isPrivate={isPrivate}
+              isLoading={operationLoading.addExpense || operationLoading.updateExpense || operationLoading.deleteExpense}
+            />
+          </div>
         </div>
 
         {/* Categories Management */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6 fluid-grid-item">
           <CategoryList
             categories={data.categories}
             onAdd={addCategory}
@@ -315,35 +323,43 @@ const Index = () => {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
-          <IncomeVsExpenseChart 
-            totalIncome={totals.income} 
-            totalExpense={totals.expense} 
-            isPrivate={isPrivate} 
-          />
+          <div className="fluid-grid-item">
+            <IncomeVsExpenseChart 
+              totalIncome={totals.income} 
+              totalExpense={totals.expense} 
+              isPrivate={isPrivate} 
+            />
+          </div>
           
-          <ExpenseDistributionChart 
-            expenses={data.expense} 
-            categories={data.categories}
-            isPrivate={isPrivate} 
-          />
+          <div className="fluid-grid-item">
+            <ExpenseDistributionChart 
+              expenses={data.expense} 
+              categories={data.categories}
+              isPrivate={isPrivate} 
+            />
+          </div>
         </div>
 
         {/* Accounts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
-          <AccountsOverview
-            accounts={data.accounts}
-            total={totals.accounts}
-            onUpdate={updateAccount}
-            onAdd={addAccount}
-            onDelete={deleteAccount}
-            isPrivate={isPrivate}
-          />
+          <div className="fluid-grid-item">
+            <AccountsOverview
+              accounts={data.accounts}
+              total={totals.accounts}
+              onUpdate={updateAccount}
+              onAdd={addAccount}
+              onDelete={deleteAccount}
+              isPrivate={isPrivate}
+            />
+          </div>
 
-          <AccountsChart accounts={data.accounts} isPrivate={isPrivate} />
+          <div className="fluid-grid-item">
+            <AccountsChart accounts={data.accounts} isPrivate={isPrivate} />
+          </div>
         </div>
 
         {/* Notification Settings Section */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6 fluid-grid-item">
           <NotificationSettings />
         </div>
       </div>

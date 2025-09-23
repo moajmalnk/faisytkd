@@ -122,6 +122,96 @@ All colors MUST be HSL.
   }
 }
 
+/* Fluid Motion System */
+@layer base {
+  /* Global fluid transitions for all interactive elements */
+  * {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Fluid page transitions */
+  body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Fluid Animations */
+@keyframes fluidFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fluidSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fluidScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fluidFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fluidPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes fluidGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+  }
+}
+
+@keyframes fluidShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* Hide scrollbars while maintaining scroll functionality */
 @layer utilities {
   /* Webkit browsers (Chrome, Safari, Edge) */
@@ -155,5 +245,169 @@ All colors MUST be HSL.
     transition: filter 150ms ease-in-out;
     pointer-events: none;
     user-select: none;
+  }
+
+  /* Fluid Effect Classes */
+  .fluid-fade-in {
+    animation: fluidFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-slide-in {
+    animation: fluidSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-scale-in {
+    animation: fluidScaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-float {
+    animation: fluidFloat 3s ease-in-out infinite;
+  }
+
+  .fluid-pulse {
+    animation: fluidPulse 2s ease-in-out infinite;
+  }
+
+  .fluid-glow {
+    animation: fluidGlow 2s ease-in-out infinite;
+  }
+
+  /* Fluid hover effects */
+  .fluid-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-hover:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .fluid-hover-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-hover-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .fluid-hover-button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fluid-hover-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .fluid-hover-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .fluid-hover-button:hover::before {
+    left: 100%;
+  }
+
+  /* Fluid input focus effects */
+  .fluid-input {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-input:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Fluid loading shimmer */
+  .fluid-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 200% 100%;
+    animation: fluidShimmer 1.5s infinite;
+  }
+
+  /* Fluid page transitions */
+  .fluid-page-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .fluid-page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-page-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .fluid-page-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Fluid grid stagger animation */
+  .fluid-grid-item {
+    animation: fluidFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: both;
+  }
+
+  .fluid-grid-item:nth-child(1) { animation-delay: 0.1s; }
+  .fluid-grid-item:nth-child(2) { animation-delay: 0.2s; }
+  .fluid-grid-item:nth-child(3) { animation-delay: 0.3s; }
+  .fluid-grid-item:nth-child(4) { animation-delay: 0.4s; }
+  .fluid-grid-item:nth-child(5) { animation-delay: 0.5s; }
+  .fluid-grid-item:nth-child(6) { animation-delay: 0.6s; }
+  .fluid-grid-item:nth-child(7) { animation-delay: 0.7s; }
+  .fluid-grid-item:nth-child(8) { animation-delay: 0.8s; }
+
+  /* Fluid chart animations */
+  .fluid-chart {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-chart:hover {
+    transform: scale(1.02);
+  }
+
+  /* Fluid list item animations */
+  .fluid-list-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-list-item:hover {
+    transform: translateX(8px);
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+
+  /* Fluid modal animations */
+  .fluid-modal {
+    animation: fluidScaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-modal-backdrop {
+    animation: fluidFadeIn 0.3s ease-out;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

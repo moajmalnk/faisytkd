@@ -18,8 +18,14 @@ import { PinScreen } from '@/components/PinScreen';
 import { PatternScreen } from '@/components/PatternScreen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calculator, TrendingUp, TrendingDown, Wallet, IndianRupee, Target, Percent, LogOut, AlertTriangle } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, Wallet, IndianRupee, Target, Percent, LogOut, AlertTriangle, Eye, Camera } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { Image } from '@radix-ui/react-avatar';
+import { SecurityAPI, API_BASE } from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const Index = () => {
   const {
@@ -72,6 +78,84 @@ const Index = () => {
   
   const netBalance = totals.collect - totals.pay;
 
+  const [intrusionsOpen, setIntrusionsOpen] = useState(false);
+  const [intrusions, setIntrusions] = useState<Array<{ id: number; ip: string | null; user_agent: string | null; photo_path: string; created_at: string; meta?: string | null }>>([]);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pinError, setPinError] = useState('');
+  const [pinMode, setPinMode] = useState<'view'|'delete'>('view');
+
+  const captureIntrusionPhoto = async () => {
+    try {
+      // Attempt to capture from existing webcam stream via a temporary video element
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const video = document.createElement('video');
+      video.srcObject = stream as any;
+      await video.play();
+      await new Promise(r => setTimeout(r, 200)); // small warmup
+      const width = video.videoWidth || 320;
+      const height = video.videoHeight || 240;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('no ctx');
+      ctx.drawImage(video, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      stream.getTracks().forEach(t => t.stop());
+      await SecurityAPI.reportIntrusion(dataUrl);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const openIntrusions = async () => {
+    setPinMode('view');
+    setPinValue('');
+    setPinError('');
+    setPinDialogOpen(true);
+  };
+
+  const requestDelete = (id: number) => {
+    setPinMode('delete');
+    setDeletingId(id);
+    setPinValue('');
+    setPinError('');
+    setPinDialogOpen(true);
+  };
+
+  const confirmDeleteWithPin = async () => {
+    if (pinValue !== '995559') {
+      setPinError('Incorrect PIN');
+      return false;
+    }
+    if (pinMode === 'delete') {
+      if (deletingId == null) return false;
+      try {
+        await SecurityAPI.deleteIntrusion(deletingId);
+        setIntrusions(prev => prev.filter(i => i.id !== deletingId));
+        setPinDialogOpen(false);
+        setDeletingId(null);
+        return true;
+      } catch {
+        setPinError('Delete failed');
+        return false;
+      }
+    } else {
+      try {
+        const res = await SecurityAPI.listIntrusions(24);
+        setIntrusions(res.items);
+        setPinDialogOpen(false);
+        setIntrusionsOpen(true);
+        return true;
+      } catch {
+        setPinError('Load failed');
+        return false;
+      }
+    }
+  };
+
   if (isLoading) {
     return <BookkeepingSkeleton />;
   }
@@ -99,6 +183,15 @@ const Index = () => {
             <p className={`text-muted-foreground text-xs sm:text-sm lg:text-base ${isPrivate ? 'privacy-blur' : ''}`}>Manage your collections, payments, and accounts</p>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={openIntrusions}
+              className="h-9 w-9"
+              title="Show Captured Intrusions"
+            >
+              <Camera className="h-4 w-4" />
+            </Button>
             <PrivacyToggle isPrivate={isPrivate} onToggle={() => setIsPrivate(!isPrivate)} />
             <ThemeToggle />
             <Button
@@ -363,6 +456,72 @@ const Index = () => {
           <NotificationSettings />
         </div>
       </div>
+      <Dialog open={intrusionsOpen} onOpenChange={setIntrusionsOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Captured Intrusions</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {intrusions.map(item => (
+              <div key={item.id} className="border rounded overflow-hidden">
+                <div className="relative">
+                  <AspectRatio ratio={4/3}>
+                    <img
+                      src={`${API_BASE}/intrusions/${item.photo_path}`}
+                      alt={`Intrusion ${item.id}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </AspectRatio>
+                  <button
+                    onClick={() => requestDelete(item.id)}
+                    className="absolute top-1 right-1 bg-background/70 hover:bg-background text-foreground rounded-full p-1 shadow"
+                    title="Delete"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="text-[10px] sm:text-xs p-2 space-y-1">
+                  <div className="break-all"><span className="font-semibold">IP:</span> {item.ip || 'unknown'}</div>
+                  <div className="break-words whitespace-pre-wrap"><span className="font-semibold">UA:</span> {item.user_agent || ''}</div>
+                  <div><span className="font-semibold">At:</span> {new Date(item.created_at + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</div>
+                  {item.meta && (() => { try { const m = JSON.parse(item.meta); return (
+                    <div className="space-y-0.5">
+                      {m.platform && <div><span className="font-semibold">Platform:</span> {m.platform}</div>}
+                      {m.language && <div><span className="font-semibold">Lang:</span> {m.language}</div>}
+                      {m.vendor && <div><span className="font-semibold">Vendor:</span> {m.vendor}</div>}
+                    </div>
+                  ); } catch { return null; } })()}
+                </div>
+              </div>
+            ))}
+            {intrusions.length === 0 && (
+              <div className="text-sm text-muted-foreground">No captures yet.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{pinMode === 'delete' ? 'Enter PIN to delete' : 'Enter PIN to view captures'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              type="password"
+              inputMode="numeric"
+              value={pinValue}
+              onChange={(e) => { setPinValue(e.target.value); setPinError(''); }}
+              placeholder="Enter PIN"
+              autoFocus
+            />
+            {pinError && <div className="text-sm text-destructive">{pinError}</div>}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPinDialogOpen(false)}>Cancel</Button>
+              <Button onClick={confirmDeleteWithPin}>{pinMode === 'delete' ? 'Delete' : 'Submit'}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

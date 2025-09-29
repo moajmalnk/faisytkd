@@ -25,6 +25,19 @@ export const AccountsAPI = {
   delete: (id: number) => request<{ ok: boolean }>(`/accounts.php?id=${id}`, { method: 'DELETE' }),
 };
 
+// Security / Intrusions
+export const SecurityAPI = {
+  reportIntrusion: (imageData: string, meta?: Record<string, any>) =>
+    request<{ ok: boolean; file: string; ip: string }>(`/intrusions.php`, {
+      method: 'POST',
+      body: JSON.stringify({ imageData, meta }),
+    }),
+  listIntrusions: (limit = 20) =>
+    request<{ ok: boolean; items: Array<{ id: number; ip: string | null; user_agent: string | null; photo_path: string; meta?: string | null; created_at: string }> }>(`/intrusions.php?limit=${limit}`),
+  deleteIntrusion: (id: number) =>
+    request<{ ok: boolean }>(`/intrusions.php?id=${id}`, { method: 'DELETE' }),
+};
+
 // Categories
 export const CategoriesAPI = {
   list: () => request<{ ok: boolean; items: Array<{ id: number; name: string; type: 'income'|'expense'; color: string }> }>(`/categories.php`),

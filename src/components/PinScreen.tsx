@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Shield, Delete, Fingerprint } from 'lucide-react';
+import { SecurityAPI } from '@/lib/api';
 
 interface PinScreenProps {
   onPinCorrect: () => void;
@@ -14,7 +15,77 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
   const [error, setError] = useState('');
   const [isFingerprint, setIsFingerprint] = useState(false);
   const [isPasskeyEnrollment, setIsPasskeyEnrollment] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const correctPin = '3388';
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    // Try to warm up camera stream for quicker capture on failure
+    const enableCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices?.getUserMedia?.({ video: { facingMode: 'user' }, audio: false });
+        if (stream && videoRef.current) {
+          streamRef.current = stream;
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+          setCameraReady(true);
+        }
+      } catch {
+        // Ignore if permissions denied; we'll attempt best-effort on failure capture
+        setCameraReady(false);
+        setError('Camera access required. Please allow camera to proceed.');
+      }
+    };
+    enableCamera();
+    const onVisibility = () => {
+      if (!document.hidden && !cameraReady) {
+        enableCamera();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  const captureIntruderPhoto = async () => {
+    try {
+      // Ensure we have a stream; if not, request temporarily
+      if (!streamRef.current) {
+        try {
+          streamRef.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        } catch {
+          return; // Cannot capture without camera permission
+        }
+      }
+      const video = videoRef.current;
+      if (!video) return;
+
+      const width = video.videoWidth || 320;
+      const height = video.videoHeight || 240;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      const meta = {
+        platform: navigator.platform,
+        language: navigator.language,
+        vendor: navigator.vendor,
+      };
+      await SecurityAPI.reportIntrusion(dataUrl, meta);
+    } catch (e) {
+      // silent failure
+    }
+  };
 
   // Check if WebAuthn is supported
   const isWebAuthnSupported = typeof window !== 'undefined' && 
@@ -28,6 +99,10 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
       setPin(newPin);
       setError('');
       
+      if (!cameraReady) {
+        setError('Camera required. Please allow camera to continue.');
+        return;
+      }
       if (newPin.length === 4) {
         if (newPin === correctPin) {
           const existingCredential = localStorage.getItem('webauthn-credential-id');
@@ -46,6 +121,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
         } else {
           setError('Incorrect PIN');
           onIncrementAttempts();
+          captureIntruderPhoto();
           setTimeout(() => {
             setPin('');
             setError('');
@@ -162,6 +238,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
         </CardHeader>
         
         <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
+          <video ref={videoRef} playsInline muted className="hidden" />
           {/* PIN Display */}
           <div className="flex justify-center space-x-3 sm:space-x-4">
             {[0, 1, 2, 3].map((index) => (
@@ -196,7 +273,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
                 size="lg"
                 className="h-12 sm:h-16 text-lg sm:text-xl font-semibold"
                 onClick={() => handleNumberClick(num.toString())}
-                disabled={attempts >= 3}
+                disabled={attempts >= 3 || !cameraReady}
               >
                 {num}
               </Button>
@@ -207,7 +284,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
               size="lg"
               className="h-12 sm:h-16 text-sm sm:text-base"
               onClick={handleClear}
-              disabled={attempts >= 3}
+              disabled={attempts >= 3 || !cameraReady}
             >
               Clear
             </Button>
@@ -217,7 +294,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
               size="lg"
               className="h-12 sm:h-16 text-lg sm:text-xl font-semibold"
               onClick={() => handleNumberClick('0')}
-              disabled={attempts >= 3}
+              disabled={attempts >= 3 || !cameraReady}
             >
               0
             </Button>
@@ -227,7 +304,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
               size="lg"
               className="h-12 sm:h-16"
               onClick={handleDelete}
-              disabled={attempts >= 3}
+              disabled={attempts >= 3 || !cameraReady}
             >
               <Delete className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -245,13 +322,18 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
                 size="lg"
                 className="flex flex-col items-center gap-1.5 sm:gap-2 h-auto py-3 sm:py-4"
                 onClick={handleFingerprintAuth}
-                disabled={attempts >= 3 || isFingerprint}
+                disabled={attempts >= 3 || isFingerprint || !cameraReady}
               >
                 <Fingerprint className={`h-6 w-6 sm:h-8 sm:w-8 ${isFingerprint ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
                 <span className="text-xs sm:text-sm">
                   {isFingerprint ? 'Authenticating...' : 'Use Fingerprint'}
                 </span>
               </Button>
+            </div>
+          )}
+          {!cameraReady && (
+            <div className="text-center text-xs sm:text-sm text-warning pt-2">
+              Camera is required. Please allow camera access from your browser settings.
             </div>
           )}
         </CardContent>

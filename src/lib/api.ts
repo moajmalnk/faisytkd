@@ -1,5 +1,4 @@
-// Prefer environment override; fallback to same-origin backend in this repo
-export const API_BASE = (import.meta as any).env?.VITE_API_BASE || `${window.location.origin}/backend`;
+export const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://kanakki.moajmalnk.com';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

@@ -12,7 +12,7 @@ interface CollectionsListProps {
   items: CollectItem[];
   total: number;
   accounts: Account[];
-  onAdd: (name: string, amount: number) => void;
+  onAdd: (name: string, amount: number, accountId: string) => void;
   onUpdate: (id: string, name: string, amount: number) => void;
   onDelete: (id: string) => void;
   onMarkCompleted: (id: string, accountId: string) => void;
@@ -25,6 +25,7 @@ export const CollectionsList = ({ items, total, accounts, onAdd, onUpdate, onDel
   const [deleteItem, setDeleteItem] = useState<CollectItem | null>(null);
   const [formData, setFormData] = useState({ name: '', amount: '' });
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [addSelectedAccountId, setAddSelectedAccountId] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,10 +38,11 @@ export const CollectionsList = ({ items, total, accounts, onAdd, onUpdate, onDel
       onUpdate(editItem.id, formData.name, amount);
       setEditItem(null);
     } else {
-      onAdd(formData.name, amount);
+      onAdd(formData.name, amount, addSelectedAccountId);
       setIsAddOpen(false);
     }
     setFormData({ name: '', amount: '' });
+    setAddSelectedAccountId('');
   };
 
   const openEdit = (item: CollectItem) => {
@@ -106,7 +108,31 @@ export const CollectionsList = ({ items, total, accounts, onAdd, onUpdate, onDel
                   className="h-11"
                 />
               </div>
-              <Button type="submit" className="w-full h-11 bg-success hover:bg-success/90 text-success-foreground">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Account</label>
+                <Select value={addSelectedAccountId} onValueChange={setAddSelectedAccountId}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Choose account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              account.type === 'cash' ? 'bg-green-500' :
+                              account.type === 'bank' ? 'bg-blue-500' :
+                              'bg-orange-500'
+                            }`} />
+                            <span>{account.name} ₹{account.amount.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" disabled={!addSelectedAccountId} className="w-full h-11 bg-success hover:bg-success/90 text-success-foreground">
                 Add Collection Entry
               </Button>
             </form>

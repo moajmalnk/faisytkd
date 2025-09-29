@@ -264,12 +264,13 @@ export const useBookkeeping = () => {
     localStorage.setItem('bookkeeping-data', JSON.stringify(data));
   }, [data]);
 
-  const addCollectItem = async (name: string, amount: number) => {
+  const addCollectItem = async (name: string, amount: number, accountId: string) => {
     try {
       const res = await TransactionsAPI.create({
         kind: 'collect',
         amount,
         note: name,
+        account_id: accountId ? Number(accountId) : null,
         occurred_on: new Date().toISOString().split('T')[0],
       });
       
@@ -279,10 +280,26 @@ export const useBookkeeping = () => {
         amount,
         completed: false,
       };
-      setData(prev => ({
-        ...prev,
-        collect: [...prev.collect, newItem],
-      }));
+      setData(prev => {
+        // Decrease the selected account balance when adding to collect
+        const numericAmount = Number(amount) || 0;
+        let accountKey = Object.keys(prev.accounts).find(k => String(prev.accounts[k].id) === String(accountId));
+        if (!accountKey && prev.accounts[accountId as keyof Accounts]) {
+          accountKey = accountId as keyof Accounts as string;
+        }
+        const updatedAccounts = { ...prev.accounts };
+        if (accountKey) {
+          updatedAccounts[accountKey] = {
+            ...updatedAccounts[accountKey],
+            amount: Math.max(0, (updatedAccounts[accountKey].amount || 0) - numericAmount),
+          } as AccountData;
+        }
+        return {
+          ...prev,
+          collect: [...prev.collect, newItem],
+          accounts: updatedAccounts,
+        };
+      });
     } catch (e) {
       console.error('addCollectItem failed', e);
     }
@@ -320,12 +337,13 @@ export const useBookkeeping = () => {
     }
   };
 
-  const addPayItem = async (name: string, amount: number) => {
+  const addPayItem = async (name: string, amount: number, accountId: string) => {
     try {
       const res = await TransactionsAPI.create({
         kind: 'pay',
         amount,
         note: name,
+        account_id: accountId ? Number(accountId) : null,
         occurred_on: new Date().toISOString().split('T')[0],
       });
       
@@ -335,10 +353,26 @@ export const useBookkeeping = () => {
         amount,
         completed: false,
       };
-      setData(prev => ({
-        ...prev,
-        pay: [...prev.pay, newItem],
-      }));
+      setData(prev => {
+        // Increase the selected account balance when adding to pay
+        const numericAmount = Number(amount) || 0;
+        let accountKey = Object.keys(prev.accounts).find(k => String(prev.accounts[k].id) === String(accountId));
+        if (!accountKey && prev.accounts[accountId as keyof Accounts]) {
+          accountKey = accountId as keyof Accounts as string;
+        }
+        const updatedAccounts = { ...prev.accounts };
+        if (accountKey) {
+          updatedAccounts[accountKey] = {
+            ...updatedAccounts[accountKey],
+            amount: (updatedAccounts[accountKey].amount || 0) + numericAmount,
+          } as AccountData;
+        }
+        return {
+          ...prev,
+          pay: [...prev.pay, newItem],
+          accounts: updatedAccounts,
+        };
+      });
     } catch (e) {
       console.error('addPayItem failed', e);
     }

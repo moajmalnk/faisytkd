@@ -67,7 +67,10 @@ export const PatternScreen = ({ onPatternCorrect }: PatternScreenProps) => {
       const existingCredential = localStorage.getItem('webauthn-credential-id');
       
       if (!existingCredential) {
-        // Create a new credential
+        // Do NOT allow creating a new credential from the pattern screen
+        setError('Enter PIN to enroll a new passkey');
+        return;
+        // Create a new credential (intentionally disabled here)
         const publicKeyCredentialCreationOptions = {
           challenge: new Uint8Array(32),
           rp: {

@@ -13,6 +13,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isFingerprint, setIsFingerprint] = useState(false);
+  const [isPasskeyEnrollment, setIsPasskeyEnrollment] = useState(false);
   const correctPin = '8848';
 
   // Check if WebAuthn is supported
@@ -29,6 +30,18 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
       
       if (newPin.length === 4) {
         if (newPin === correctPin) {
+          const existingCredential = localStorage.getItem('webauthn-credential-id');
+          if (!existingCredential) {
+            // No passkey yet: prompt to set up regardless of fingerprint button state
+            setIsPasskeyEnrollment(true);
+            setError('Now Setup Finger');
+            return;
+          }
+          if (isPasskeyEnrollment) {
+            // Continue passkey enrollment now that PIN is verified
+            handleFingerprintAuth();
+            return;
+          }
           onPinCorrect();
         } else {
           setError('Incorrect PIN');
@@ -60,12 +73,17 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
 
     try {
       setIsFingerprint(true);
-      setError('');
 
       // Check if there's an existing credential
       const existingCredential = localStorage.getItem('webauthn-credential-id');
       
       if (!existingCredential) {
+        // Require correct PIN before allowing a new passkey to be registered
+        if (pin !== correctPin) {
+          setIsPasskeyEnrollment(true);
+          setError('Enter your PIN first to enable passkey');
+          return;
+        }
         // Create a new credential
         const publicKeyCredentialCreationOptions = {
           challenge: new Uint8Array(32),
@@ -87,12 +105,16 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
           attestation: "direct" as const
         };
 
+        // Update helper text to reflect we're about to enroll
+        setError('Now Setup Finger');
+
         const credential = await navigator.credentials.create({
           publicKey: publicKeyCredentialCreationOptions
         });
 
         if (credential) {
           localStorage.setItem('webauthn-credential-id', credential.id);
+          setIsPasskeyEnrollment(false);
           onPinCorrect();
         }
       } else {

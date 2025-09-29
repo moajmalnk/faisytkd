@@ -178,7 +178,7 @@ export const PatternScreen = ({ onPatternCorrect }: PatternScreenProps) => {
           </div>
 
           <div className="text-center text-xs sm:text-sm text-muted-foreground">
-            Draw the Z pattern to unlock
+            Draw the " " pattern to unlock
           </div>
 
           {/* Fingerprint Authentication */}

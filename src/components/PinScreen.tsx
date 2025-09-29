@@ -14,7 +14,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
   const [error, setError] = useState('');
   const [isFingerprint, setIsFingerprint] = useState(false);
   const [isPasskeyEnrollment, setIsPasskeyEnrollment] = useState(false);
-  const correctPin = '8848';
+  const correctPin = '3388';
 
   // Check if WebAuthn is supported
   const isWebAuthnSupported = typeof window !== 'undefined' && 

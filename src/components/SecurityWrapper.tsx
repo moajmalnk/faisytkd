@@ -16,9 +16,20 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
     
     // Check for suspicious browser environments (only basic checks)
     const checkEnvironment = () => {
-      // Only check for obvious automation tools, not debugging
+      // Check if it's a mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       window.innerWidth <= 768 ||
+                       ('ontouchstart' in window) ||
+                       (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+      
+      // Skip automation checks on mobile devices to avoid false positives
+      if (isMobile) {
+        return true;
+      }
+      
+      // Only check for obvious automation tools on desktop
       const automationSigns = [
-        'webdriver' in window,
+        'webdriver' in window && navigator.webdriver,
         'selenium' in window,
         'phantom' in window,
         'nightmare' in window
@@ -29,7 +40,7 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
         return false;
       }
       
-      // Check for obvious headless browser
+      // Check for obvious headless browser (only on desktop)
       if (navigator.webdriver && window.outerHeight === 0 && window.outerWidth === 0) {
         setWarningMessage('Headless browser detected. Access denied.');
         return false;

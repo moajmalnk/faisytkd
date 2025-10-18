@@ -74,21 +74,32 @@ const disableDevTools = () => {
 
 // Detect and prevent DevTools opening
 const detectDevTools = () => {
+  // Check if it's a mobile device - skip devtools detection on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 || // Mobile screen width
+                   ('ontouchstart' in window) || // Touch support
+                   (navigator.maxTouchPoints && navigator.maxTouchPoints > 0); // Touch points
+  
+  // Skip devtools detection on mobile devices
+  if (isMobile) {
+    return;
+  }
   
   let devtools = {
     open: false,
     orientation: null as string | null
   };
   
-  const threshold = 160;
+  const threshold = 200; // Increased threshold
   
   setInterval(() => {
+    // Only check on desktop devices
     if (window.outerHeight - window.innerHeight > threshold || 
         window.outerWidth - window.innerWidth > threshold) {
         if (!devtools.open) {
           devtools.open = true;
-          // Redirect to a warning page or close the app
-          window.location.href = 'about:blank' as any;
+          // Just log warning instead of redirecting
+          console.warn('DevTools detected');
         }
     } else {
       devtools.open = false;

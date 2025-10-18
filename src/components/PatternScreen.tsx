@@ -74,13 +74,13 @@ export const PatternScreen = ({ onPatternCorrect }: PatternScreenProps) => {
         const publicKeyCredentialCreationOptions = {
           challenge: new Uint8Array(32),
           rp: {
-            name: "NKBook",
+            name: "FaisyKoott",
             id: window.location.hostname,
           },
           user: {
             id: new Uint8Array(16),
-            name: "user@nkbook.app",
-            displayName: "NKBook User",
+            name: "user@FaisyKoott.app",
+            displayName: "FaisyKoott User",
           },
           pubKeyCredParams: [{alg: -7, type: "public-key" as const}],
           authenticatorSelection: {

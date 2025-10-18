@@ -1,6 +1,6 @@
 {
-  "name": "NKBook - Personal Bookkeeping",
-  "short_name": "NKBook",
+  "name": "FaisyKoott - Personal Bookkeeping",
+  "short_name": "FaisyKoott",
   "description": "A modern personal bookkeeping and expense tracking app",
   "start_url": "/",
   "display": "standalone",

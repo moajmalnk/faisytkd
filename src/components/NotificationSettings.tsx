@@ -108,7 +108,7 @@ export function NotificationSettings() {
 
     await notificationService.showNotification({
       title: 'Test Notification',
-      body: 'This is a test notification from NKBook!',
+      body: 'This is a test notification from FaisyKoott!',
       icon: '/icons/icon-192x192.png',
       tag: 'test-notification'
     });
@@ -148,7 +148,7 @@ export function NotificationSettings() {
             <div className="space-y-1">
               <Label className="text-base">Enable Notifications</Label>
               <p className="text-sm text-muted-foreground">
-                Allow NKBook to send you notifications
+                Allow FaisyKoott to send you notifications
               </p>
             </div>
             <div className="flex items-center gap-2">

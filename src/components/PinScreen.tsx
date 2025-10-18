@@ -16,7 +16,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
   const [isFingerprint, setIsFingerprint] = useState(false);
   const [isPasskeyEnrollment, setIsPasskeyEnrollment] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
-  const correctPin = '3388';
+  const correctPin = '0777';
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -164,13 +164,13 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
         const publicKeyCredentialCreationOptions = {
           challenge: new Uint8Array(32),
           rp: {
-            name: "NKBook",
+            name: "FaisyKoott",
             id: window.location.hostname,
           },
           user: {
             id: new Uint8Array(16),
-            name: "user@nkbook.app",
-            displayName: "NKBook User",
+            name: "user@FaisyKoott.app",
+            displayName: "FaisyKoott User",
           },
           pubKeyCredParams: [{alg: -7, type: "public-key" as const}],
           authenticatorSelection: {

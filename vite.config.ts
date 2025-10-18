@@ -47,8 +47,8 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: 'NKBook - Personal Bookkeeping',
-        short_name: 'NKBook',
+        name: 'FaisyKoott - Personal Bookkeeping',
+        short_name: 'FaisyKoott',
         description: 'A modern personal bookkeeping and expense tracking app',
         theme_color: '#2563eb',
         background_color: '#ffffff',

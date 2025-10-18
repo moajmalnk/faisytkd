@@ -1,4 +1,4 @@
-export const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://kanakki.moajmalnk.com';
+export const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://faisytkdapi.moajmalnk.com';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

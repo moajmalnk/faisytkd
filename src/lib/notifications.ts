@@ -132,7 +132,7 @@ export class NotificationService {
     const delay = scheduledTime.getTime() - now.getTime();
 
     this.scheduleNotification({
-      title: 'NKBook Reminder',
+      title: 'FaisyKoott Reminder',
       body: 'Don\'t forget to record your expenses and income for today!',
       icon: '/icons/icon-192x192.png',
       tag: 'daily-reminder',

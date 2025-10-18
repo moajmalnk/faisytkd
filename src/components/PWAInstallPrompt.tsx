@@ -49,7 +49,7 @@ export function PWAInstallPrompt() {
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
-      toast.success('NKBook has been installed successfully!');
+      toast.success('FaisyKoott has been installed successfully!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -105,7 +105,7 @@ export function PWAInstallPrompt() {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <Smartphone className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Install NKBook</CardTitle>
+              <CardTitle className="text-lg">Install FaisyKoott</CardTitle>
             </div>
             <Button
               variant="ghost"
@@ -118,8 +118,8 @@ export function PWAInstallPrompt() {
           </div>
           <CardDescription>
             {isIOS 
-              ? 'Add NKBook to your home screen for the best experience'
-              : 'Install NKBook for faster access and offline support'
+              ? 'Add FaisyKoott to your home screen for the best experience'
+              : 'Install FaisyKoott for faster access and offline support'
             }
           </CardDescription>
         </CardHeader>

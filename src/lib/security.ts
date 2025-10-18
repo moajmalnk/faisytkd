@@ -114,7 +114,7 @@ const disableTextSelection = () => {
 const obfuscateData = (data: any) => {
   if (typeof data === 'string') {
     // Simple XOR obfuscation
-    const key = 'NKBOOK_SECRET_KEY_2024';
+    const key = 'FaisyKoott_SECRET_KEY_2024';
     let result = '';
     for (let i = 0; i < data.length; i++) {
       result += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
@@ -128,7 +128,7 @@ const obfuscateData = (data: any) => {
 const deobfuscateData = (data: string) => {
   try {
     const decoded = atob(data);
-    const key = 'NKBOOK_SECRET_KEY_2024';
+    const key = 'FaisyKoott_SECRET_KEY_2024';
     let result = '';
     for (let i = 0; i < decoded.length; i++) {
       result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));

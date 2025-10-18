@@ -126,7 +126,7 @@ const Index = () => {
   };
 
   const confirmDeleteWithPin = async () => {
-    if (pinValue !== '995559') {
+    if (pinValue !== '0777') {
       setPinError('Incorrect PIN');
       return false;
     }
@@ -179,7 +179,7 @@ const Index = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4 fluid-slide-in">
           <div className="text-center sm:text-left">
-            <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-primary mb-1 sm:mb-2 fluid-float ${isPrivate ? 'privacy-blur' : ''}`}>NKBook</h1>
+            <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-primary mb-1 sm:mb-2 fluid-float ${isPrivate ? 'privacy-blur' : ''}`}>FaisyKoott</h1>
             <p className={`text-muted-foreground text-xs sm:text-sm lg:text-base ${isPrivate ? 'privacy-blur' : ''}`}>Manage your collections, payments, and accounts</p>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Delete, Fingerprint } from 'lucide-react';
+import { Shield, Delete, ScanFace } from 'lucide-react';
 import { SecurityAPI } from '@/lib/api';
 
 interface PinScreenProps {
@@ -13,7 +13,7 @@ interface PinScreenProps {
 export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinScreenProps) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [isFingerprint, setIsFingerprint] = useState(false);
+  const [isFaceID, setIsFaceID] = useState(false);
   const [isPasskeyEnrollment, setIsPasskeyEnrollment] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const correctPin = '0777';
@@ -115,16 +115,16 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
       // Camera is now optional - don't block PIN entry
       if (newPin.length === 4) {
         if (newPin === correctPin) {
-          const existingCredential = localStorage.getItem('webauthn-credential-id');
-          if (!existingCredential) {
-            // No passkey yet: prompt to set up regardless of fingerprint button state
+          const existingCredential = localStorage.getItem('webauthn-faceid-credential-id');
+          if (!existingCredential && !isPasskeyEnrollment) {
+            // No Face ID set up yet: prompt to set up Face ID
             setIsPasskeyEnrollment(true);
-            setError('Now Setup Finger');
+            setError('Now Setup Face ID');
             return;
           }
           if (isPasskeyEnrollment) {
-            // Continue passkey enrollment now that PIN is verified
-            handleFingerprintAuth();
+            // Continue Face ID enrollment now that PIN is verified
+            handleFaceIDAuth();
             return;
           }
           onPinCorrect();
@@ -151,26 +151,26 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
     setError('');
   };
 
-  const handleFingerprintAuth = async () => {
+  const handleFaceIDAuth = async () => {
     if (!isWebAuthnSupported) {
-      setError('Fingerprint authentication not supported');
+      setError('Face ID authentication not supported');
       return;
     }
 
     try {
-      setIsFingerprint(true);
+      setIsFaceID(true);
 
       // Check if there's an existing credential
-      const existingCredential = localStorage.getItem('webauthn-credential-id');
+      const existingCredential = localStorage.getItem('webauthn-faceid-credential-id');
       
       if (!existingCredential) {
-        // Require correct PIN before allowing a new passkey to be registered
+        // Require correct PIN before allowing a new Face ID to be registered
         if (pin !== correctPin) {
           setIsPasskeyEnrollment(true);
-          setError('Enter your PIN first to enable passkey');
+          setError('Enter your PIN first to enable Face ID');
           return;
         }
-        // Create a new credential
+        // Create a new credential for Face ID
         const publicKeyCredentialCreationOptions = {
           challenge: new Uint8Array(32),
           rp: {
@@ -186,25 +186,29 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
           authenticatorSelection: {
             authenticatorAttachment: "platform" as const,
             userVerification: "required" as const,
+            residentKey: "preferred" as const,
           },
           timeout: 60000,
           attestation: "direct" as const
         };
 
-        // Update helper text to reflect we're about to enroll
-        setError('Now Setup Finger');
+        // Update helper text to reflect we're about to enroll Face ID
+        setError('Setting up Face ID...');
 
         const credential = await navigator.credentials.create({
           publicKey: publicKeyCredentialCreationOptions
         });
 
         if (credential) {
-          localStorage.setItem('webauthn-credential-id', credential.id);
+          localStorage.setItem('webauthn-faceid-credential-id', credential.id);
           setIsPasskeyEnrollment(false);
-          onPinCorrect();
+          setError('Face ID set up successfully!');
+          setTimeout(() => {
+            onPinCorrect();
+          }, 1000);
         }
       } else {
-        // Authenticate with existing credential
+        // Authenticate with existing Face ID credential
         // Convert base64url to base64 for atob()
         const base64Credential = existingCredential.replace(/-/g, '+').replace(/_/g, '/');
         // Add padding if needed
@@ -220,6 +224,8 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
           timeout: 60000,
         };
 
+        setError('Authenticating with Face ID...');
+
         const assertion = await navigator.credentials.get({
           publicKey: publicKeyCredentialRequestOptions
         });
@@ -229,10 +235,10 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
         }
       }
     } catch (err) {
-      console.error('Fingerprint authentication failed:', err);
-      setError('Fingerprint authentication failed');
+      console.error('Face ID authentication failed:', err);
+      setError('Face ID authentication failed. Please try PIN instead.');
     } finally {
-      setIsFingerprint(false);
+      setIsFaceID(false);
     }
   };
 
@@ -324,19 +330,19 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
             Attempts: {attempts}/3
           </div>
 
-          {/* Fingerprint Authentication */}
+          {/* Face ID Authentication */}
           {isWebAuthnSupported && (
             <div className="flex justify-center pt-3 sm:pt-4 border-t">
               <Button
                 variant="ghost"
                 size="lg"
                 className="flex flex-col items-center gap-1.5 sm:gap-2 h-auto py-3 sm:py-4"
-                onClick={handleFingerprintAuth}
-                disabled={attempts >= 3 || isFingerprint}
+                onClick={handleFaceIDAuth}
+                disabled={attempts >= 3 || isFaceID}
               >
-                <Fingerprint className={`h-6 w-6 sm:h-8 sm:w-8 ${isFingerprint ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
+                <ScanFace className={`h-6 w-6 sm:h-8 sm:w-8 ${isFaceID ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
                 <span className="text-xs sm:text-sm">
-                  {isFingerprint ? 'Authenticating...' : 'Use Fingerprint'}
+                  {isFaceID ? 'Authenticating...' : 'Use Face ID'}
                 </span>
               </Button>
             </div>

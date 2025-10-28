@@ -43,22 +43,34 @@ export const useAuth = () => {
     safeSessionStorage.setItem('bookkeeping-activity', now.toString());
   }, []);
 
-  // Set up activity listeners
+  // Set up activity listeners - iOS compatible
   useEffect(() => {
     if (isAuthenticated) {
-      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+      // Include both mouse and touch events for cross-platform compatibility
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'touchend', 'touchmove'];
       
       const handleActivity = () => {
         updateActivity();
       };
 
+      // Use passive listeners for touch events on iOS for better performance
+      const options = { passive: true };
+      
       events.forEach(event => {
-        document.addEventListener(event, handleActivity);
+        if (event.startsWith('touch')) {
+          document.addEventListener(event, handleActivity, options as AddEventListenerOptions);
+        } else {
+          document.addEventListener(event, handleActivity);
+        }
       });
 
       return () => {
         events.forEach(event => {
-          document.removeEventListener(event, handleActivity);
+          if (event.startsWith('touch')) {
+            document.removeEventListener(event, handleActivity, options as EventListenerOptions);
+          } else {
+            document.removeEventListener(event, handleActivity);
+          }
         });
       };
     }

@@ -8,23 +8,95 @@
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
+    touch-action: manipulation;
   }
   
   /* Fix iOS Safari viewport issues */
+  html {
+    -webkit-text-size-adjust: 100%;
+    height: -webkit-fill-available;
+  }
+  
   body {
     -webkit-overflow-scrolling: touch;
     -webkit-text-size-adjust: 100%;
+    min-height: -webkit-fill-available;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
   }
   
-  /* Fix iOS Safari input zoom */
+  /* Fix iOS Safari 100vh issue */
+  #root {
+    min-height: -webkit-fill-available;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+  }
+  
+  /* Fix iOS Safari input zoom - prevent zoom on focus */
   input, textarea, select {
-    font-size: 16px;
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
+  
+  /* Fix iOS Safari button and interactive element issues */
+  button, a, [role="button"], [tabindex] {
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Ensure buttons are clickable on iOS */
+  button:active, 
+  a:active, 
+  [role="button"]:active {
+    opacity: 0.7;
   }
   
   /* Fix iOS Safari transform issues */
   .fluid-animation {
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
+  }
+  
+  /* Fix scrollable containers on iOS */
+  [data-scrollable],
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-scroll,
+  [role="dialog"],
+  [role="alertdialog"] {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pan-x;
+  }
+  
+  /* Prevent iOS double-tap zoom on interactive elements */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+  
+  /* Fix iOS Safari fixed positioning issues */
+  [style*="position: fixed"],
+  .fixed {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Fix iOS Safari safe area insets */
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-inset-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-inset-right {
+    padding-right: env(safe-area-inset-right);
   }
 }
 

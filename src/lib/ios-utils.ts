@@ -34,13 +34,33 @@ export const supportsWebAuthn = (): boolean => {
          'create' in navigator.credentials;
 };
 
-// iOS-specific storage utilities
+// iOS-specific storage utilities with fallback
 export const safeLocalStorage = {
   getItem: (key: string): string | null => {
     try {
-      return localStorage.getItem(key);
+      // Try localStorage first
+      const value = localStorage.getItem(key);
+      if (value !== null) return value;
+      
+      // Fallback to sessionStorage on iOS if localStorage fails
+      if (isIOS()) {
+        try {
+          return sessionStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      }
+      return null;
     } catch (error) {
       console.warn('localStorage.getItem failed:', error);
+      // Try sessionStorage as fallback on iOS
+      if (isIOS()) {
+        try {
+          return sessionStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      }
       return null;
     }
   },
@@ -51,6 +71,15 @@ export const safeLocalStorage = {
       return true;
     } catch (error) {
       console.warn('localStorage.setItem failed:', error);
+      // Fallback to sessionStorage on iOS private mode
+      if (isIOS()) {
+        try {
+          sessionStorage.setItem(key, value);
+          return true;
+        } catch {
+          return false;
+        }
+      }
       return false;
     }
   },
@@ -58,20 +87,50 @@ export const safeLocalStorage = {
   removeItem: (key: string): boolean => {
     try {
       localStorage.removeItem(key);
+      // Also remove from sessionStorage if it exists there
+      if (isIOS()) {
+        try {
+          sessionStorage.removeItem(key);
+        } catch {
+          // Ignore
+        }
+      }
       return true;
     } catch (error) {
       console.warn('localStorage.removeItem failed:', error);
+      if (isIOS()) {
+        try {
+          sessionStorage.removeItem(key);
+          return true;
+        } catch {
+          return false;
+        }
+      }
       return false;
     }
   }
 };
 
+// Fallback storage for iOS when both localStorage and sessionStorage fail
+const memoryStorage: Record<string, string> = {};
+
 export const safeSessionStorage = {
   getItem: (key: string): string | null => {
     try {
-      return sessionStorage.getItem(key);
+      const value = sessionStorage.getItem(key);
+      if (value !== null) return value;
+      
+      // Fallback to memory storage
+      if (isIOS() && memoryStorage[key]) {
+        return memoryStorage[key];
+      }
+      return null;
     } catch (error) {
       console.warn('sessionStorage.getItem failed:', error);
+      // Fallback to memory storage
+      if (isIOS() && memoryStorage[key]) {
+        return memoryStorage[key];
+      }
       return null;
     }
   },
@@ -79,9 +138,18 @@ export const safeSessionStorage = {
   setItem: (key: string, value: string): boolean => {
     try {
       sessionStorage.setItem(key, value);
+      // Also store in memory as backup on iOS
+      if (isIOS()) {
+        memoryStorage[key] = value;
+      }
       return true;
     } catch (error) {
       console.warn('sessionStorage.setItem failed:', error);
+      // Fallback to memory storage on iOS
+      if (isIOS()) {
+        memoryStorage[key] = value;
+        return true;
+      }
       return false;
     }
   },
@@ -89,9 +157,18 @@ export const safeSessionStorage = {
   removeItem: (key: string): boolean => {
     try {
       sessionStorage.removeItem(key);
+      // Also remove from memory storage
+      if (isIOS() && memoryStorage[key]) {
+        delete memoryStorage[key];
+      }
       return true;
     } catch (error) {
       console.warn('sessionStorage.removeItem failed:', error);
+      // Still try to remove from memory
+      if (isIOS() && memoryStorage[key]) {
+        delete memoryStorage[key];
+        return true;
+      }
       return false;
     }
   }
@@ -208,21 +285,91 @@ export const preventIOSBounce = (): void => {
   }, { passive: false });
 };
 
+// Fix iOS button click issues by ensuring buttons work with touch
+const fixButtonClicks = (): void => {
+  if (typeof document === 'undefined') return;
+  
+  // Add touch event handlers to all buttons to ensure they work on iOS
+  const handleButtonTouch = (button: HTMLElement) => {
+    if (button.dataset.iosTouchFixed) return;
+    button.dataset.iosTouchFixed = 'true';
+    
+    // Prevent double-tap zoom
+    let lastTouchEnd = 0;
+    const preventDoubleTapZoom = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    };
+    
+    button.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
+    
+    // Ensure click events fire on iOS
+    button.addEventListener('touchstart', (e) => {
+      // Don't interfere, just ensure the element can receive touch
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.getAttribute('role') === 'button') {
+        target.style.cursor = 'pointer';
+      }
+    }, { passive: true });
+  };
+  
+  // Fix existing buttons
+  document.querySelectorAll('button, a[role="button"], [role="button"]').forEach(handleButtonTouch);
+  
+  // Watch for dynamically added buttons
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) { // Element node
+          const element = node as HTMLElement;
+          if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
+            handleButtonTouch(element);
+          }
+          // Check child elements
+          element.querySelectorAll?.('button, [role="button"]').forEach(handleButtonTouch);
+        }
+      });
+    });
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+};
+
+// Fix iOS Safari 100vh issue
+const fixIOSViewportHeight = (): void => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  
+  // Set CSS custom property for actual viewport height
+  const setVH = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  };
+  
+  setVH();
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(setVH, 100);
+  });
+};
+
 // Initialize iOS-specific fixes
 export const initializeIOSFixes = (): void => {
   try {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
     if (!isIOS()) return;
     
-    // Use setTimeout to defer initialization after React renders
-    setTimeout(() => {
-      try {
-        // Prevent iOS bounce scrolling - but make it safe
-        preventIOSBounce();
-      } catch (error) {
-        console.warn('Failed to initialize iOS bounce prevention:', error);
-      }
-    }, 500); // Wait 500ms after initial render
+    // Fix viewport height immediately
+    try {
+      fixIOSViewportHeight();
+    } catch (error) {
+      console.warn('Failed to fix iOS viewport height:', error);
+    }
     
     // Add iOS-specific meta tags if not present (this is safe to do immediately)
     try {
@@ -241,12 +388,60 @@ export const initializeIOSFixes = (): void => {
       const viewportMeta = document.querySelector('meta[name="viewport"]');
       if (viewportMeta) {
         viewportMeta.setAttribute('content', 
-          'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover'
+          'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
         );
       }
     } catch (error) {
       // Silently fail - viewport is already set in HTML
     }
+    
+    // Wait for DOM to be ready before fixing buttons
+    const initButtonFixes = () => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          try {
+            fixButtonClicks();
+          } catch (error) {
+            console.warn('Failed to fix button clicks:', error);
+          }
+        });
+      } else {
+        try {
+          fixButtonClicks();
+        } catch (error) {
+          console.warn('Failed to fix button clicks:', error);
+        }
+      }
+    };
+    
+    // Fix button clicks when DOM is ready
+    initButtonFixes();
+    
+    // Use setTimeout to defer other initialization after React renders
+    setTimeout(() => {
+      try {
+        // Prevent iOS bounce scrolling - but make it safe
+        preventIOSBounce();
+        
+        // Fix button clicks again after React renders
+        fixButtonClicks();
+        
+        // Re-fix viewport height after render
+        fixIOSViewportHeight();
+      } catch (error) {
+        console.warn('Failed to initialize iOS bounce prevention:', error);
+      }
+    }, 500); // Wait 500ms after initial render
+    
+    // Add another delay to ensure all React components are rendered
+    setTimeout(() => {
+      try {
+        fixButtonClicks();
+        fixIOSViewportHeight();
+      } catch (error) {
+        // Ignore
+      }
+    }, 1000);
     
     // Log success in development only
     if (process.env.NODE_ENV !== 'production') {

@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/backend/(.*)",
+      "destination": "https://faisytkdapi.albedoedu.com/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -79,12 +83,6 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "src": "/backend/(.*)",
-      "dest": "https://faisytkdapi.albedoedu.com/$1"
     }
   ],
   "buildCommand": "npm run build",

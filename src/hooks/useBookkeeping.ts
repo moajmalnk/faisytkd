@@ -3,6 +3,7 @@ import { AccountsAPI, CategoriesAPI, TransactionsAPI } from '@/lib/api';
 import { bookkeepingNotifications } from '@/lib/notifications';
 import { useNotificationSettings } from '@/components/NotificationSettings';
 import { toast } from '@/hooks/use-toast';
+import { safeLocalStorage } from '@/lib/ios-utils';
 
 export interface CollectItem {
   id: string;
@@ -261,12 +262,7 @@ export const useBookkeeping = () => {
   }, [loadData]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('bookkeeping-data', JSON.stringify(data));
-    } catch (error) {
-      // Handle iOS Safari private browsing mode
-      console.warn('Could not save bookkeeping data to localStorage:', error);
-    }
+    safeLocalStorage.setItem('bookkeeping-data', JSON.stringify(data));
   }, [data]);
 
   const addCollectItem = async (name: string, amount: number, accountId: string) => {

@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { safeLocalStorage } from '@/lib/ios-utils';
 
 const Index = () => {
   const {
@@ -67,23 +68,13 @@ const Index = () => {
   } = useAuth();
   const [isPrivate, setIsPrivate] = useState(() => {
     // Load privacy mode from localStorage on initialization
-    try {
-      const savedPrivacyMode = localStorage.getItem('privacy-mode');
-      return savedPrivacyMode === 'true';
-    } catch (error) {
-      // Handle iOS Safari private browsing mode
-      console.warn('Could not access localStorage:', error);
-      return false;
-    }
+    const savedPrivacyMode = safeLocalStorage.getItem('privacy-mode');
+    return savedPrivacyMode === 'true';
   });
 
   // Save privacy mode to localStorage whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem('privacy-mode', isPrivate.toString());
-    } catch (error) {
-      console.warn('Could not save privacy mode:', error);
-    }
+    safeLocalStorage.setItem('privacy-mode', isPrivate.toString());
   }, [isPrivate]);
   
   const netBalance = totals.collect - totals.pay;

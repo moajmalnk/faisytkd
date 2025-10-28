@@ -51,8 +51,11 @@ export const useFluidAnimation = (options: FluidAnimationOptions = {}) => {
         break;
       
       case 'hover':
+        // Add both mouse and touch events for iOS compatibility
         element.addEventListener('mouseenter', animate);
         element.addEventListener('mouseleave', reset);
+        element.addEventListener('touchstart', animate);
+        element.addEventListener('touchend', reset);
         break;
       
       case 'focus':
@@ -65,22 +68,31 @@ export const useFluidAnimation = (options: FluidAnimationOptions = {}) => {
         break;
       
       case 'scroll':
-        const observer = new IntersectionObserver(
-          ([entry]) => {
-            if (entry.isIntersecting) {
-              animate();
-            }
-          },
-          { threshold }
-        );
-        observer.observe(element);
-        
-        return () => observer.disconnect();
+        // Check if IntersectionObserver is supported (iOS Safari < 12.2)
+        if ('IntersectionObserver' in window) {
+          const observer = new IntersectionObserver(
+            ([entry]) => {
+              if (entry.isIntersecting) {
+                animate();
+              }
+            },
+            { threshold }
+          );
+          observer.observe(element);
+          
+          return () => observer.disconnect();
+        } else {
+          // Fallback for older iOS versions - just animate immediately
+          animate();
+        }
+        break;
     }
 
     return () => {
       element.removeEventListener('mouseenter', animate);
       element.removeEventListener('mouseleave', reset);
+      element.removeEventListener('touchstart', animate);
+      element.removeEventListener('touchend', reset);
       element.removeEventListener('focus', animate);
       element.removeEventListener('blur', reset);
       element.removeEventListener('click', animate);

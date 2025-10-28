@@ -18,15 +18,20 @@ const App = () => {
     // Service worker registration is handled by VitePWA plugin
     // Just handle service worker messages for notifications
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
-          // Handle notification click
-          window.focus();
-          if (event.data.url) {
-            window.location.href = event.data.url;
+      try {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
+            // Handle notification click
+            window.focus();
+            if (event.data.url) {
+              window.location.href = event.data.url;
+            }
           }
-        }
-      });
+        });
+      } catch (error) {
+        // Handle iOS Safari service worker issues
+        console.warn('Service worker message handling failed:', error);
+      }
     }
   }, []);
 

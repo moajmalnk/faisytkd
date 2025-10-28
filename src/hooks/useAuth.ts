@@ -90,22 +90,15 @@ export const useAuth = () => {
     safeSessionStorage.removeItem('bookkeeping-activity');
   };
 
-  // Check if fingerprint authentication is available
-  const isFingerprintAvailable = () => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Check if Face ID authentication is available
+  const isFaceIDAvailable = () => {
     const isWebAuthnSupported = typeof window !== 'undefined' && 
       'navigator' in window && 
       'credentials' in navigator && 
       'create' in navigator.credentials;
     
-    // For iOS, be more conservative about WebAuthn support
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      // iOS WebAuthn support is limited, so we'll disable it for now
-      return false;
-    }
-    
-    return isMobile && isWebAuthnSupported;
+    // Face ID uses WebAuthn which is supported on iOS Safari 14+ and modern browsers
+    return isWebAuthnSupported;
   };
 
   const incrementPinAttempts = () => {
@@ -137,6 +130,6 @@ export const useAuth = () => {
     showPatternScreen,
     incrementPinAttempts,
     handlePatternCorrect,
-    isFingerprintAvailable,
+    isFaceIDAvailable,
   };
 };

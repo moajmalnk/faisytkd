@@ -10,28 +10,34 @@ export const useAuth = () => {
 
   // Check for existing session on mount
   useEffect(() => {
-    const sessionAuth = sessionStorage.getItem('bookkeeping-auth');
-    const savedActivity = sessionStorage.getItem('bookkeeping-activity');
-    const savedPinAttempts = sessionStorage.getItem('bookkeeping-pin-attempts');
-    
-    if (savedPinAttempts) {
-      const attempts = parseInt(savedPinAttempts);
-      setPinAttempts(attempts);
-      if (attempts >= 3) {
-        setShowPatternScreen(true);
+    try {
+      const sessionAuth = sessionStorage.getItem('bookkeeping-auth');
+      const savedActivity = sessionStorage.getItem('bookkeeping-activity');
+      const savedPinAttempts = sessionStorage.getItem('bookkeeping-pin-attempts');
+      
+      if (savedPinAttempts) {
+        const attempts = parseInt(savedPinAttempts);
+        setPinAttempts(attempts);
+        if (attempts >= 3) {
+          setShowPatternScreen(true);
+        }
       }
-    }
-    
-    if (sessionAuth === 'authenticated' && savedActivity) {
-      const timeSinceActivity = Date.now() - parseInt(savedActivity);
-      if (timeSinceActivity < AUTO_LOCK_TIME) {
-        setIsAuthenticated(true);
-        setLastActivity(parseInt(savedActivity));
-      } else {
-        // Session expired, clear it
-        sessionStorage.removeItem('bookkeeping-auth');
-        sessionStorage.removeItem('bookkeeping-activity');
+      
+      if (sessionAuth === 'authenticated' && savedActivity) {
+        const timeSinceActivity = Date.now() - parseInt(savedActivity);
+        if (timeSinceActivity < AUTO_LOCK_TIME) {
+          setIsAuthenticated(true);
+          setLastActivity(parseInt(savedActivity));
+        } else {
+          // Session expired, clear it
+          sessionStorage.removeItem('bookkeeping-auth');
+          sessionStorage.removeItem('bookkeeping-activity');
+        }
       }
+    } catch (error) {
+      // Handle iOS Safari private browsing mode or storage issues
+      console.warn('Session storage not available, starting fresh:', error);
+      setIsAuthenticated(false);
     }
   }, []);
 
@@ -39,7 +45,12 @@ export const useAuth = () => {
   const updateActivity = useCallback(() => {
     const now = Date.now();
     setLastActivity(now);
-    sessionStorage.setItem('bookkeeping-activity', now.toString());
+    try {
+      sessionStorage.setItem('bookkeeping-activity', now.toString());
+    } catch (error) {
+      // Handle iOS Safari private browsing mode
+      console.warn('Could not save activity timestamp:', error);
+    }
   }, []);
 
   // Set up activity listeners
@@ -79,14 +90,24 @@ export const useAuth = () => {
 
   const login = () => {
     setIsAuthenticated(true);
-    sessionStorage.setItem('bookkeeping-auth', 'authenticated');
-    updateActivity();
+    try {
+      sessionStorage.setItem('bookkeeping-auth', 'authenticated');
+      updateActivity();
+    } catch (error) {
+      // Handle iOS Safari private browsing mode
+      console.warn('Could not save authentication state:', error);
+    }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    sessionStorage.removeItem('bookkeeping-auth');
-    sessionStorage.removeItem('bookkeeping-activity');
+    try {
+      sessionStorage.removeItem('bookkeeping-auth');
+      sessionStorage.removeItem('bookkeeping-activity');
+    } catch (error) {
+      // Handle iOS Safari private browsing mode
+      console.warn('Could not clear authentication state:', error);
+    }
   };
 
   // Check if fingerprint authentication is available
@@ -96,13 +117,25 @@ export const useAuth = () => {
       'navigator' in window && 
       'credentials' in navigator && 
       'create' in navigator.credentials;
+    
+    // For iOS, be more conservative about WebAuthn support
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      // iOS WebAuthn support is limited, so we'll disable it for now
+      return false;
+    }
+    
     return isMobile && isWebAuthnSupported;
   };
 
   const incrementPinAttempts = () => {
     const newAttempts = pinAttempts + 1;
     setPinAttempts(newAttempts);
-    sessionStorage.setItem('bookkeeping-pin-attempts', newAttempts.toString());
+    try {
+      sessionStorage.setItem('bookkeeping-pin-attempts', newAttempts.toString());
+    } catch (error) {
+      console.warn('Could not save PIN attempts:', error);
+    }
     
     if (newAttempts >= 3) {
       setShowPatternScreen(true);
@@ -112,7 +145,11 @@ export const useAuth = () => {
   const resetPinAttempts = () => {
     setPinAttempts(0);
     setShowPatternScreen(false);
-    sessionStorage.removeItem('bookkeeping-pin-attempts');
+    try {
+      sessionStorage.removeItem('bookkeeping-pin-attempts');
+    } catch (error) {
+      console.warn('Could not clear PIN attempts:', error);
+    }
   };
 
   const handlePatternCorrect = () => {

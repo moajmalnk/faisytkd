@@ -261,7 +261,12 @@ export const useBookkeeping = () => {
   }, [loadData]);
 
   useEffect(() => {
-    localStorage.setItem('bookkeeping-data', JSON.stringify(data));
+    try {
+      localStorage.setItem('bookkeeping-data', JSON.stringify(data));
+    } catch (error) {
+      // Handle iOS Safari private browsing mode
+      console.warn('Could not save bookkeeping data to localStorage:', error);
+    }
   }, [data]);
 
   const addCollectItem = async (name: string, amount: number, accountId: string) => {

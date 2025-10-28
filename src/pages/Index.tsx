@@ -67,13 +67,23 @@ const Index = () => {
   } = useAuth();
   const [isPrivate, setIsPrivate] = useState(() => {
     // Load privacy mode from localStorage on initialization
-    const savedPrivacyMode = localStorage.getItem('privacy-mode');
-    return savedPrivacyMode === 'true';
+    try {
+      const savedPrivacyMode = localStorage.getItem('privacy-mode');
+      return savedPrivacyMode === 'true';
+    } catch (error) {
+      // Handle iOS Safari private browsing mode
+      console.warn('Could not access localStorage:', error);
+      return false;
+    }
   });
 
   // Save privacy mode to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('privacy-mode', isPrivate.toString());
+    try {
+      localStorage.setItem('privacy-mode', isPrivate.toString());
+    } catch (error) {
+      console.warn('Could not save privacy mode:', error);
+    }
   }, [isPrivate]);
   
   const netBalance = totals.collect - totals.pay;
@@ -88,8 +98,21 @@ const Index = () => {
 
   const captureIntrusionPhoto = async () => {
     try {
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('Camera access not supported on this device');
+        return;
+      }
+
       // Attempt to capture from existing webcam stream via a temporary video element
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        }, 
+        audio: false 
+      });
       const video = document.createElement('video');
       video.srcObject = stream as any;
       await video.play();
@@ -105,8 +128,18 @@ const Index = () => {
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
       stream.getTracks().forEach(t => t.stop());
       await SecurityAPI.reportIntrusion(dataUrl);
-    } catch (e) {
-      // ignore
+    } catch (error) {
+      console.error('Failed to capture intrusion photo:', error);
+      // Handle iOS-specific camera permission issues
+      if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError') {
+          console.warn('Camera permission denied');
+        } else if (error.name === 'NotFoundError') {
+          console.warn('No camera found on this device');
+        } else if (error.name === 'NotSupportedError') {
+          console.warn('Camera not supported on this device');
+        }
+      }
     }
   };
 

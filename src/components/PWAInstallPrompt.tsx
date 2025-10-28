@@ -33,7 +33,16 @@ export function PWAInstallPrompt() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(iOS);
 
-    // Listen for beforeinstallprompt event
+    // For iOS, show the prompt after a delay
+    if (iOS) {
+      const timer = setTimeout(() => {
+        setShowPrompt(true);
+      }, 2000); // Show after 2 seconds on iOS
+      
+      return () => clearTimeout(timer);
+    }
+
+    // Listen for beforeinstallprompt event (Android/Desktop)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault(); // Prevent the default browser install prompt
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -127,13 +136,16 @@ export function PWAInstallPrompt() {
           {isIOS ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                To install on iOS:
+                To install FaisyKoott on your iPhone/iPad:
               </p>
               <ol className="text-sm space-y-1 text-muted-foreground">
-                <li>1. Tap the Share button in Safari</li>
-                <li>2. Scroll down and tap "Add to Home Screen"</li>
-                <li>3. Tap "Add" to confirm</li>
+                <li>1. Tap the Share button <span className="font-semibold">(📤)</span> at the bottom of Safari</li>
+                <li>2. Scroll down and tap <span className="font-semibold">"Add to Home Screen"</span></li>
+                <li>3. Tap <span className="font-semibold">"Add"</span> to confirm</li>
               </ol>
+              <p className="text-xs text-muted-foreground mt-2">
+                The app will then appear on your home screen like a native app!
+              </p>
               <Button onClick={handleDismiss} variant="outline" className="w-full">
                 Got it
               </Button>

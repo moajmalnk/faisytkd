@@ -16,7 +16,7 @@ export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) =>
     
     // Check for suspicious browser environments (only basic checks)
     const checkEnvironment = () => {
-      // Check if it's a mobile device
+      // Check if it's a mobile device (including iOS)
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                        window.innerWidth <= 768 ||
                        ('ontouchstart' in window) ||

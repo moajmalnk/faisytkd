@@ -16,13 +16,13 @@ export interface SecurityConfig {
 
 // Default security configuration
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
-  disableConsole: true,
+  disableConsole: false, // Disabled to avoid iOS issues
   disableRightClick: false, // Disabled by default to avoid UX issues
   disableDevTools: false, // Disabled by default to avoid false positives
   disableTextSelection: false, // Disabled by default to avoid UX issues
   detectDevTools: false, // Disabled by default to avoid false positives
   preventIframeEmbedding: true,
-  detectSuspiciousActivity: true,
+  detectSuspiciousActivity: false, // Disabled to avoid iOS issues
   clearSensitiveData: true,
   aggressiveMode: false // Set to true for maximum security
 };

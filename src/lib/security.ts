@@ -80,7 +80,7 @@ const detectDevTools = () => {
                    ('ontouchstart' in window) || // Touch support
                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0); // Touch points
   
-  // Skip devtools detection on mobile devices
+  // Skip devtools detection on mobile devices (including iOS)
   if (isMobile) {
     return;
   }

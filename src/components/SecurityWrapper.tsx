@@ -6,13 +6,19 @@ interface SecurityWrapperProps {
 }
 
 export const SecurityWrapper: React.FC<SecurityWrapperProps> = ({ children }) => {
-  const [isSecure, setIsSecure] = useState(false);
+  // Start with true for mobile/iOS to prevent blocking during initialization
+  const [isSecure, setIsSecure] = useState(true);
   const [warningMessage, setWarningMessage] = useState('');
   const [isBackground, setIsBackground] = useState(false);
 
   useEffect(() => {
-    // Initialize security measures
-    initializeSecurity();
+    // Initialize security measures with error handling
+    try {
+      initializeSecurity();
+    } catch (error) {
+      console.warn('Security initialization failed:', error);
+      // Continue anyway - don't block app
+    }
     
     // Check for suspicious browser environments (only basic checks)
     const checkEnvironment = () => {

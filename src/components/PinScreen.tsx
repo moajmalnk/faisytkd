@@ -22,82 +22,21 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    // Make camera optional - don't block app if camera is not available
-    const enableCamera = async () => {
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          // Camera not supported - allow app to continue without it
-          setCameraReady(false);
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-        if (stream && videoRef.current) {
-          streamRef.current = stream;
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
-          setCameraReady(true);
-        }
-      } catch {
-        // Camera permission denied - allow app to continue without it
-        setCameraReady(false);
-        // Don't show error - camera is optional now
-      }
-    };
+    // Camera access disabled - no camera permission requested
+    setCameraReady(false);
     
-    // Try to enable camera, but don't block if it fails
-    enableCamera();
-    
-    const onVisibility = () => {
-      if (!document.hidden && !cameraReady) {
-        enableCamera();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      // Cleanup any existing streams
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
         streamRef.current = null;
       }
-      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 
   const captureIntruderPhoto = async () => {
-    try {
-      // Only capture if camera is available - fail silently if not
-      if (!cameraReady || !streamRef.current) {
-        return; // Silently skip photo capture if camera not available
-      }
-      
-      // Ensure we have a stream; if not, request temporarily
-      if (!streamRef.current) {
-        try {
-          streamRef.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-        } catch {
-          return; // Cannot capture without camera permission - fail silently
-        }
-      }
-      const video = videoRef.current;
-      if (!video) return;
-
-      const width = video.videoWidth || 320;
-      const height = video.videoHeight || 240;
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(video, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      const meta = {
-        platform: navigator.platform,
-        language: navigator.language,
-        vendor: navigator.vendor,
-      };
-      await SecurityAPI.reportIntrusion(dataUrl, meta);
-    } catch (e) {
-      // silent failure
-    }
+    // Camera access disabled - no photo capture
+    return;
   };
 
   // Check if WebAuthn is supported

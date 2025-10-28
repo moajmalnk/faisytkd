@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     headers: {
       'Service-Worker-Allowed': '/',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=()',
     },
   },
   plugins: [

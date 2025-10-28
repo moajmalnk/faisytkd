@@ -11,6 +11,7 @@
   "lang": "en",
   "dir": "ltr",
   "scope": "/",
+  "permissions": [],
   "icons": [
     {
       "src": "/icons/icon.svg",

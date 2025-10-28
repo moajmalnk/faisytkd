@@ -174,29 +174,10 @@ export const safeSessionStorage = {
   }
 };
 
-// iOS-specific camera utilities
+// iOS-specific camera utilities (disabled - no camera access)
 export const requestCameraPermission = async (): Promise<boolean> => {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    return false;
-  }
-  
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: 'user',
-        width: { ideal: 640 },
-        height: { ideal: 480 }
-      }, 
-      audio: false 
-    });
-    
-    // Stop the stream immediately - we just wanted to check permissions
-    stream.getTracks().forEach(track => track.stop());
-    return true;
-  } catch (error) {
-    console.warn('Camera permission denied or not available:', error);
-    return false;
-  }
+  // Camera access is disabled - always return false
+  return false;
 };
 
 // iOS-specific PWA utilities

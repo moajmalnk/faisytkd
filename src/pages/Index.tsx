@@ -88,50 +88,8 @@ const Index = () => {
   const [pinMode, setPinMode] = useState<'view'|'delete'>('view');
 
   const captureIntrusionPhoto = async () => {
-    try {
-      // Check if getUserMedia is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.warn('Camera access not supported on this device');
-        return;
-      }
-
-      // Attempt to capture from existing webcam stream via a temporary video element
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        }, 
-        audio: false 
-      });
-      const video = document.createElement('video');
-      video.srcObject = stream as any;
-      await video.play();
-      await new Promise(r => setTimeout(r, 200)); // small warmup
-      const width = video.videoWidth || 320;
-      const height = video.videoHeight || 240;
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('no ctx');
-      ctx.drawImage(video, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      stream.getTracks().forEach(t => t.stop());
-      await SecurityAPI.reportIntrusion(dataUrl);
-    } catch (error) {
-      console.error('Failed to capture intrusion photo:', error);
-      // Handle iOS-specific camera permission issues
-      if (error instanceof DOMException) {
-        if (error.name === 'NotAllowedError') {
-          console.warn('Camera permission denied');
-        } else if (error.name === 'NotFoundError') {
-          console.warn('No camera found on this device');
-        } else if (error.name === 'NotSupportedError') {
-          console.warn('Camera not supported on this device');
-        }
-      }
-    }
+    // Camera access disabled - no photo capture
+    return;
   };
 
   const openIntrusions = async () => {

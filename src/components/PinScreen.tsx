@@ -22,10 +22,15 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    // Try to warm up camera stream for quicker capture on failure
+    // Make camera optional - don't block app if camera is not available
     const enableCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices?.getUserMedia?.({ video: { facingMode: 'user' }, audio: false });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          // Camera not supported - allow app to continue without it
+          setCameraReady(false);
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
         if (stream && videoRef.current) {
           streamRef.current = stream;
           videoRef.current.srcObject = stream;
@@ -33,12 +38,15 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
           setCameraReady(true);
         }
       } catch {
-        // Ignore if permissions denied; we'll attempt best-effort on failure capture
+        // Camera permission denied - allow app to continue without it
         setCameraReady(false);
-        setError('Camera access required. Please allow camera to proceed.');
+        // Don't show error - camera is optional now
       }
     };
+    
+    // Try to enable camera, but don't block if it fails
     enableCamera();
+    
     const onVisibility = () => {
       if (!document.hidden && !cameraReady) {
         enableCamera();
@@ -56,12 +64,17 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
 
   const captureIntruderPhoto = async () => {
     try {
+      // Only capture if camera is available - fail silently if not
+      if (!cameraReady || !streamRef.current) {
+        return; // Silently skip photo capture if camera not available
+      }
+      
       // Ensure we have a stream; if not, request temporarily
       if (!streamRef.current) {
         try {
           streamRef.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
         } catch {
-          return; // Cannot capture without camera permission
+          return; // Cannot capture without camera permission - fail silently
         }
       }
       const video = videoRef.current;
@@ -99,10 +112,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
       setPin(newPin);
       setError('');
       
-      if (!cameraReady) {
-        setError('Camera required. Please allow camera to continue.');
-        return;
-      }
+      // Camera is now optional - don't block PIN entry
       if (newPin.length === 4) {
         if (newPin === correctPin) {
           const existingCredential = localStorage.getItem('webauthn-credential-id');
@@ -273,7 +283,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
                 size="lg"
                 className="h-12 sm:h-16 text-lg sm:text-xl font-semibold"
                 onClick={() => handleNumberClick(num.toString())}
-                disabled={attempts >= 3 || !cameraReady}
+                disabled={attempts >= 3}
               >
                 {num}
               </Button>
@@ -284,7 +294,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
               size="lg"
               className="h-12 sm:h-16 text-sm sm:text-base"
               onClick={handleClear}
-              disabled={attempts >= 3 || !cameraReady}
+              disabled={attempts >= 3}
             >
               Clear
             </Button>
@@ -294,7 +304,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
               size="lg"
               className="h-12 sm:h-16 text-lg sm:text-xl font-semibold"
               onClick={() => handleNumberClick('0')}
-              disabled={attempts >= 3 || !cameraReady}
+              disabled={attempts >= 3}
             >
               0
             </Button>
@@ -304,7 +314,7 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
               size="lg"
               className="h-12 sm:h-16"
               onClick={handleDelete}
-              disabled={attempts >= 3 || !cameraReady}
+              disabled={attempts >= 3}
             >
               <Delete className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -322,18 +332,13 @@ export const PinScreen = ({ onPinCorrect, attempts, onIncrementAttempts }: PinSc
                 size="lg"
                 className="flex flex-col items-center gap-1.5 sm:gap-2 h-auto py-3 sm:py-4"
                 onClick={handleFingerprintAuth}
-                disabled={attempts >= 3 || isFingerprint || !cameraReady}
+                disabled={attempts >= 3 || isFingerprint}
               >
                 <Fingerprint className={`h-6 w-6 sm:h-8 sm:w-8 ${isFingerprint ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
                 <span className="text-xs sm:text-sm">
                   {isFingerprint ? 'Authenticating...' : 'Use Fingerprint'}
                 </span>
               </Button>
-            </div>
-          )}
-          {!cameraReady && (
-            <div className="text-center text-xs sm:text-sm text-warning pt-2">
-              Camera is required. Please allow camera access from your browser settings.
             </div>
           )}
         </CardContent>

@@ -75,11 +75,10 @@
     touch-action: manipulation;
   }
   
-  /* Fix iOS Safari fixed positioning issues */
+  /* Fix iOS Safari fixed positioning issues - apply translateZ as a stacking context fix */
   [style*="position: fixed"],
   .fixed {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
+    will-change: transform;
   }
   
   /* Fix iOS Safari safe area insets */
